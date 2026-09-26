@@ -28,6 +28,7 @@ Metadatos:
 Historial:
 ------------
 Autor       Fecha           Descripción
+zxxz6       26/09/2026      Cruces fuera del área y tabla de semáforos
 zxxz6       26/09/2026      Semáforos del inventario municipal
 zxxz6       26/09/2026      Sección de la red vial de CU BUAP
 zxxz6       25/09/2026      Instalación con PyTorch CUDA 12.8 para usar la GPU
@@ -118,7 +119,17 @@ Las opciones de construcción están en `networks/puebla/Corridor.netccfg`: sem�
 
 ### Semáforos
 
-OpenStreetMap solo trae 8 semáforos en esta zona. Los demás salen del [inventario de semáforos del municipio](data/signals/), que registra 36 intersecciones semaforizadas dentro del área. `scripts/MatchSignals.py` agrupa los postes del inventario por intersección, empareja cada una con el cruce de SUMO más cercano (a menos de 30 m) y escribe `networks/puebla/Signals.csv`. `BuildNetwork.sh` lee ese archivo y declara en `netconvert` los 31 que OSM no tiene; la red resultante tiene 39 semáforos, todos de tiempo fijo.
+OpenStreetMap solo trae 8 semáforos en esta zona. Los demás salen del [inventario de semáforos del municipio](data/signals/). `scripts/MatchSignals.py` agrupa los postes del inventario por intersección, empareja cada una con el cruce de SUMO más cercano (a menos de 30 m) y escribe `networks/puebla/Signals.csv`. `BuildNetwork.sh` lee ese archivo y declara en `netconvert` los que OSM no tiene.
+
+| | Intersecciones |
+|---|---|
+| Del inventario dentro del área elegida | 36 |
+| Del inventario fuera del área, en tramos que la red conserva y con cruce completo | 1 (22 Sur x Juan Pablo II) |
+| Ya tenían semáforo en OSM | 5 |
+| Agregadas desde el inventario | 32 |
+| **Semáforos en la red** (incluye 3 de OSM que no están en el inventario) | **40** |
+
+La red se extiende un poco más allá del área elegida porque `netconvert` conserva completas las calles que cruzan el borde. En esos tramos solo se agregan semáforos en cruces a los que llegan autos por al menos dos calles: en la orilla la calle transversal suele quedar fuera de la descarga, y un semáforo sin tráfico con qué cruzarse solo agregaría demora artificial. Por eso quedan fuera 6 intersecciones del inventario en la orilla.
 
 `BuildNetwork.sh` termina verificando que la red tenga todos los semáforos de `Signals.csv`, y se detiene con error si falta alguno. Los IDs de los cruces dependen de la versión de `netconvert`, por eso SUMO está fijo en 1.27.1 en `pyproject.toml`; con otra versión la verificación falla en lugar de perder semáforos sin avisar.
 
