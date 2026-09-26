@@ -1,0 +1,76 @@
+# pyproject.toml
+# ========================
+#
+#
+# Descripción:
+# ------------
+# Metadatos del paquete y dependencias del controlador del corredor.
+# Instala src/corridor/ en modo editable para que scripts, pruebas y
+# notebooks importen el mismo código.
+#
+#
+# Consideraciones:
+# ------------
+# - eclipse-sumo trae los binarios de SUMO como wheel; no hace falta
+#   instalarlo en el sistema. Aun así sumo-rl exige SUMO_HOME exportado
+#   en la shell, apuntando al wheel:
+#   python -c "import sumo; print(sumo.SUMO_HOME)"
+# - Instala torch con CUDA 12.8 primero (index-url .../whl/cu128): es el
+#   mínimo para la RTX 5060 Ti (Blackwell, sm_120)
+# - Solo cotas inferiores; las versiones exactas se congelan por corrida
+#   en results/
+#
+#
+# Metadatos:
+# ----------
+# * Autor: zxxz6 (Bryan Violante Arriaga)
+# * Versión: 1.0.0
+#
+#
+# Historial:
+# ------------
+# Autor       Fecha           Descripción
+# zxxz6       25/09/2026      torch con CUDA 12.8 en lugar de CPU
+# zxxz6       25/09/2026      Traducido al español
+# zxxz6       25/09/2026      Documentados SUMO_HOME y torch para CPU
+# zxxz6       25/09/2026      Eliminadas las secciones License y Warning
+# zxxz6       25/09/2026      Creación
+#
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "corridor"
+version = "0.1.0"
+description = "Control de semáforos con RL y vecinos para un corredor solar"
+requires-python = ">=3.10"
+dependencies = [
+    "eclipse-sumo>=1.20",
+    "traci>=1.20",
+    "sumo-rl>=1.4",
+    "gymnasium>=0.29",
+    "stable-baselines3>=2.3",
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "pyyaml>=6.0",
+    "matplotlib>=3.8",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 80
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+############################# FIN DE PYPROJECT.TOML ############################
+################################################################################
