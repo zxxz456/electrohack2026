@@ -28,6 +28,7 @@ Metadatos:
 Historial:
 ------------
 Autor       Fecha           Descripción
+zxxz6       26/09/2026      Semáforos del inventario municipal
 zxxz6       26/09/2026      Sección de la red vial de CU BUAP
 zxxz6       25/09/2026      Instalación con PyTorch CUDA 12.8 para usar la GPU
 zxxz6       25/09/2026      Creación
@@ -113,7 +114,22 @@ scripts/BuildNetwork.sh
 sumo-gui -c networks/puebla/Corridor.sumocfg
 ```
 
-Las opciones de construcción están en `networks/puebla/Corridor.netccfg`: semáforos de tiempo fijo, banquetas y cruces peatonales. Los cambios a la red (semáforos que faltan en OSM, vueltas prohibidas, cruces) se declaran ahí o en archivos de parche dentro de `networks/puebla/`, nunca editando `generated/` con netedit, porque la siguiente construcción los borra.
+Las opciones de construcción están en `networks/puebla/Corridor.netccfg`: semáforos de tiempo fijo, banquetas y cruces peatonales.
+
+### Semáforos
+
+OpenStreetMap solo trae 8 semáforos en esta zona. Los demás salen del [inventario de semáforos del municipio](data/signals/), que registra 36 intersecciones semaforizadas dentro del área. `scripts/MatchSignals.py` agrupa los postes del inventario por intersección, empareja cada una con el cruce de SUMO más cercano (a menos de 30 m) y escribe `networks/puebla/Signals.csv`. `BuildNetwork.sh` lee ese archivo y declara en `netconvert` los 31 que OSM no tiene; la red resultante tiene 39 semáforos, todos de tiempo fijo.
+
+`BuildNetwork.sh` termina verificando que la red tenga todos los semáforos de `Signals.csv`, y se detiene con error si falta alguno. Los IDs de los cruces dependen de la versión de `netconvert`, por eso SUMO está fijo en 1.27.1 en `pyproject.toml`; con otra versión la verificación falla en lugar de perder semáforos sin avisar.
+
+`Signals.csv` está versionado, así que no hace falta regenerarlo. Solo se vuelve a correr si cambia el inventario o el extracto de OSM:
+
+```bash
+python scripts/MatchSignals.py
+scripts/BuildNetwork.sh
+```
+
+Otros cambios a la red (semáforos que no estén en el inventario, vueltas prohibidas, cruces) se declaran en `Corridor.netccfg` o en archivos de parche dentro de `networks/puebla/`, nunca editando `generated/` con netedit, porque la siguiente construcción los borra.
 
 ## Estructura del repositorio
 
