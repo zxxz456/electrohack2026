@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Corridor.netccfg
+========================
+
+
+Descripción:
+============
+Opciones de netconvert para construir la red vial alrededor de CU BUAP
+a partir del extracto congelado de OpenStreetMap (Corridor.osm.xml.gz).
+La red resultante va a generated/ y nunca se edita a mano.
+
+
+Consideraciones:
+============
+- Parte de las opciones que usa osmWebWizard, con tres cambios: los
+  semáforos son de tiempo fijo (static) y no actuados, porque la línea
+  base representa cómo operan hoy; se generan banquetas y cruces
+  peatonales, que el asistente omite cuando no se eligen peatones
+- OSM casi no tiene semáforos mapeados en Puebla. Los que faltan se
+  declaran aquí con tls.set, por ID de nodo, en cuanto se confirmen
+- Se ejecuta desde scripts/BuildNetwork.sh, que exige SUMO_HOME
+
+
+Metadatos:
+==========
+* Autor: zxxz6 (Bryan Violante Arriaga)
+* Versión: 1.0.0
+
+
+Historial:
+============
+Autor       Fecha           Descripción
+zxxz6       26/09/2026      Creación
+
+
+-->
+<netconvertConfiguration>
+    <input>
+        <type-files
+            value="${SUMO_HOME}/data/typemap/osmNetconvert.typ.xml"/>
+        <osm-files value="Corridor.osm.xml.gz"/>
+    </input>
+
+    <output>
+        <output-file value="generated/Corridor.net.xml.gz"/>
+        <output.street-names value="true"/>
+        <output.original-names value="true"/>
+    </output>
+
+    <processing>
+        <geometry.remove value="true"/>
+    </processing>
+
+    <tls_building>
+        <tls.discard-simple value="true"/>
+        <tls.join value="true"/>
+        <tls.guess-signals value="true"/>
+        <tls.default-type value="static"/>
+    </tls_building>
+
+    <ramp_guessing>
+        <ramps.guess value="true"/>
+    </ramp_guessing>
+
+    <junctions>
+        <junctions.join value="true"/>
+    </junctions>
+
+    <pedestrian>
+        <sidewalks.guess value="true"/>
+        <crossings.guess value="true"/>
+    </pedestrian>
+
+    <report>
+        <verbose value="false"/>
+    </report>
+</netconvertConfiguration>
+<!--
+########################### FIN DE CORRIDOR.NETCCFG ############################
+################################################################################
+-->

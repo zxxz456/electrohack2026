@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Corridor.view.xml
+========================
+
+
+Descripción:
+============
+Ajustes de visualización de sumo-gui para la red de CU BUAP: esquema de
+colores con polígonos reales y un retardo que permite seguir los
+vehículos a simple vista.
+
+
+Metadatos:
+==========
+* Autor: zxxz6 (Bryan Violante Arriaga)
+* Versión: 1.0.0
+
+
+Historial:
+============
+Autor       Fecha           Descripción
+zxxz6       26/09/2026      Creación
+
+
+-->
+<viewsettings>
+    <scheme name="real world"/>
+    <delay value="20"/>
+</viewsettings>
+<!--
+########################### FIN DE CORRIDOR.VIEW.XML ###########################
+################################################################################
+-->

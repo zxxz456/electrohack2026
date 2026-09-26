@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Corridor.sumocfg
+========================
+
+
+Descripción:
+============
+Configuración de SUMO para abrir la red de CU BUAP con sus polígonos.
+Por ahora solo carga el mapa; la demanda de tráfico y los programas de
+tiempo fijo se agregan en el paso 1 del plan.
+
+
+Consideraciones:
+============
+- Rutas relativas a este directorio; abrir con
+  sumo-gui -c networks/puebla/Corridor.sumocfg desde la raíz del repo
+- La red y los polígonos se construyen antes con scripts/BuildNetwork.sh
+
+
+Metadatos:
+==========
+* Autor: zxxz6 (Bryan Violante Arriaga)
+* Versión: 1.0.0
+
+
+Historial:
+============
+Autor       Fecha           Descripción
+zxxz6       26/09/2026      Creación
+
+
+-->
+<sumoConfiguration>
+    <input>
+        <net-file value="generated/Corridor.net.xml.gz"/>
+        <additional-files value="generated/Corridor.poly.xml.gz"/>
+    </input>
+
+    <gui_only>
+        <gui-settings-file value="Corridor.view.xml"/>
+    </gui_only>
+</sumoConfiguration>
+<!--
+########################### FIN DE CORRIDOR.SUMOCFG ############################
+################################################################################
+-->

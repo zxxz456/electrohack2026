@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Corridor.polycfg
+========================
+
+
+Descripción:
+============
+Opciones de polyconvert para extraer edificios, parques y áreas del
+extracto de OSM. Son solo contexto visual en sumo-gui; no afectan al
+tráfico ni a las métricas.
+
+
+Consideraciones:
+============
+- Necesita la red ya construida, porque proyecta los polígonos con las
+  mismas coordenadas; scripts/BuildNetwork.sh respeta ese orden
+
+
+Metadatos:
+==========
+* Autor: zxxz6 (Bryan Violante Arriaga)
+* Versión: 1.0.0
+
+
+Historial:
+============
+Autor       Fecha           Descripción
+zxxz6       26/09/2026      Creación
+
+
+-->
+<polyconvertConfiguration>
+    <input>
+        <net-file value="generated/Corridor.net.xml.gz"/>
+        <osm-files value="Corridor.osm.xml.gz"/>
+        <osm.keep-full-type value="true"/>
+        <osm.merge-relations value="1"/>
+        <type-file
+            value="${SUMO_HOME}/data/typemap/osmPolyconvert.typ.xml"/>
+    </input>
+
+    <output>
+        <output-file value="generated/Corridor.poly.xml.gz"/>
+    </output>
+</polyconvertConfiguration>
+<!--
+########################### FIN DE CORRIDOR.POLYCFG ############################
+################################################################################
+-->
