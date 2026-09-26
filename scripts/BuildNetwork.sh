@@ -18,6 +18,14 @@
 #   SUMO_HOME para encontrar los mapas de tipos de OSM
 # - Orden fijo: primero netconvert, luego polyconvert, que necesita la
 #   red para proyectar los polígonos
+# - Los semáforos que OSM no trae se leen de Signals.csv (filas con
+#   status added) y se pasan a netconvert con --tls.set. Ese archivo lo
+#   genera scripts/MatchSignals.py a partir del inventario municipal
+# - Las filas already_in_osm no se pasan: esos cruces ya son semáforo, y
+#   declararlos otra vez parte los semáforos conjuntos de OSM (varios
+#   nodos, un programa) en semáforos independientes y desincronizados
+# - Al final verifica que la red tenga todos los semáforos de
+#   Signals.csv; netconvert solo advierte si un nodo no existe
 #
 #
 # Metadatos:
@@ -29,6 +37,7 @@
 # Historial:
 # ------------
 # Autor       Fecha           Descripción
+# zxxz6       26/09/2026      Semáforos del inventario y verificación final
 # zxxz6       26/09/2026      Creación
 #
 
@@ -48,11 +57,26 @@ fi
 cd "$NETWORK_DIR"
 mkdir -p generated
 
+TLS_ARGS=()
+if [[ -f Signals.csv ]]; then
+    TLS_NODES="$(awk -F, 'NR > 1 && $2 == "added" && $1 != "" \
+        { print $1 }' Signals.csv | paste -sd, -)"
+    if [[ -n "$TLS_NODES" ]]; then
+        TLS_ARGS=(--tls.set "$TLS_NODES")
+        COUNT="$(tr ',' '\n' <<< "$TLS_NODES" | wc -l)"
+        echo "Semáforos declarados desde Signals.csv: $COUNT"
+    fi
+fi
+
 echo "Construyendo la red de $CORRIDOR con netconvert..."
-netconvert -c Corridor.netccfg
+netconvert -c Corridor.netccfg "${TLS_ARGS[@]}"
 
 echo "Extrayendo polígonos con polyconvert..."
 polyconvert -c Corridor.polycfg
+
+if [[ -f Signals.csv ]]; then
+    python "$REPO_DIR/scripts/MatchSignals.py" --corridor "$CORRIDOR" --check
+fi
 
 echo "Listo. Para verla: sumo-gui -c networks/$CORRIDOR/Corridor.sumocfg"
 

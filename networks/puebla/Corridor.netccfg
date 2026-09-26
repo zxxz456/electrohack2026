@@ -17,8 +17,9 @@ Consideraciones:
   semáforos son de tiempo fijo (static) y no actuados, porque la línea
   base representa cómo operan hoy; se generan banquetas y cruces
   peatonales, que el asistente omite cuando no se eligen peatones
-- OSM casi no tiene semáforos mapeados en Puebla. Los que faltan se
-  declaran aquí con tls.set, por ID de nodo, en cuanto se confirmen
+- OSM casi no tiene semáforos mapeados en Puebla. Los que faltan salen
+  del inventario municipal (Signals.csv) y BuildNetwork.sh los pasa con
+  tls.set; por eso esta configuración sola no los incluye
 - Se ejecuta desde scripts/BuildNetwork.sh, que exige SUMO_HOME
 
 
@@ -31,6 +32,7 @@ Metadatos:
 Historial:
 ============
 Autor       Fecha           Descripción
+zxxz6       26/09/2026      Semáforos del inventario vía Signals.csv
 zxxz6       26/09/2026      Creación
 
 
