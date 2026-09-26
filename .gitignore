@@ -1,0 +1,65 @@
+# .gitignore
+# ========================
+#
+#
+# Descripción:
+# ------------
+# Mantiene fuera del control de versiones la salida de simulación, los
+# modelos entrenados y los entornos locales.
+#
+#
+# Consideraciones:
+# ------------
+# - networks/*/generated/ se ignora: lo reconstruyen los scripts de red
+#   y de demanda a partir de entradas versionadas
+# - data/ conserva entradas crudas pequeñas (cotizaciones, CSV de
+#   irradiancia); los extractos grandes de OSM se ignoran y se vuelven a
+#   descargar
+#
+#
+# Metadatos:
+# ----------
+# * Autor: zxxz6 (Bryan Violante Arriaga)
+# * Versión: 1.0.0
+#
+#
+# Historial:
+# ------------
+# Autor       Fecha           Descripción
+# zxxz6       25/09/2026      Traducido al español
+# zxxz6       25/09/2026      Eliminadas las secciones License y Warning
+# zxxz6       25/09/2026      Creación
+#
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Salida de simulación y entrenamiento
+results/
+networks/*/generated/
+*.zip
+
+# Entradas crudas grandes
+data/osm/
+
+# Editores y sistema operativo
+.vscode/
+.idea/
+.DS_Store
+
+# Configuración local de Claude
+.claude/settings.local.json
+
+.claude/
+PLAN.*
+CLAUDE.*
+
+############################### FIN DE .GITIGNORE ##############################
+################################################################################
