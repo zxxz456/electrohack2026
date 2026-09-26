@@ -17,8 +17,11 @@
 #   python -c "import sumo; print(sumo.SUMO_HOME)"
 # - Instala torch con CUDA 12.8 primero (index-url .../whl/cu128): es el
 #   mínimo para la RTX 5060 Ti (Blackwell, sm_120)
-# - Solo cotas inferiores; las versiones exactas se congelan por corrida
-#   en results/
+# - SUMO, sumolib y traci van fijos en 1.27.1: los IDs de los cruces
+#   agrupados dependen de la versión de netconvert, y Signals.csv los
+#   usa. Cambiar de versión obliga a regenerar Signals.csv
+# - El resto lleva solo cota inferior; las versiones exactas se congelan
+#   por corrida en results/
 #
 #
 # Metadatos:
@@ -30,6 +33,7 @@
 # Historial:
 # ------------
 # Autor       Fecha           Descripción
+# zxxz6       26/09/2026      SUMO fijo en 1.27.1, pyproj, pytest y ruff
 # zxxz6       25/09/2026      torch con CUDA 12.8 en lugar de CPU
 # zxxz6       25/09/2026      Traducido al español
 # zxxz6       25/09/2026      Documentados SUMO_HOME y torch para CPU
@@ -47,8 +51,8 @@ version = "0.1.0"
 description = "Control de semáforos con RL y vecinos para un corredor solar"
 requires-python = ">=3.10"
 dependencies = [
-    "eclipse-sumo>=1.20",
-    "traci>=1.20",
+    "eclipse-sumo==1.27.1",
+    "traci==1.27.1",
     "sumo-rl>=1.4",
     "gymnasium>=0.29",
     "stable-baselines3>=2.3",
@@ -57,6 +61,8 @@ dependencies = [
     "pyyaml>=6.0",
     "matplotlib>=3.8",
     "requests>=2.31",
+    "sumolib==1.27.1",
+    "pyproj>=3.6",
 ]
 
 [project.optional-dependencies]
@@ -69,8 +75,14 @@ where = ["src"]
 line-length = 80
 target-version = "py310"
 
+[tool.ruff.lint]
+# Los módulos van en PascalCase por convención del proyecto.
+ignore = ["N999"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Los archivos de prueba siguen la convención PascalCase del proyecto.
+python_files = ["Test*.py"]
 
 ############################# FIN DE PYPROJECT.TOML ############################
 ################################################################################
