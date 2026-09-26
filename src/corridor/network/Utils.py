@@ -19,7 +19,8 @@ Consideraciones:
   en San Claudio) están a unos 60 m, con calles distintas
 - El área de cada corredor es la que se eligió en osmWebWizard, no el
   límite de la red: la red se extiende más allá porque netconvert
-  conserva completas las calles que cruzan el borde
+  conserva completas las calles que cruzan el borde. En esos tramos
+  solo se agregan semáforos en cruces con MIN_APPROACH_STREETS calles
 
 
 Metadatos:
@@ -31,7 +32,7 @@ Metadatos:
 Historial:
 ------------
 Autor       Fecha           Descripción
-zxxz6       26/09/2026      Nombres de la configuración y la red base
+zxxz6       26/09/2026      Red base, cruces fuera del área, inside_area
 zxxz6       26/09/2026      Creación
 
 
@@ -83,6 +84,10 @@ SAME_STREETS_LINK_RADIUS_M = 80.0
 # el cruce de SUMO con el que se empareja.
 MATCH_RADIUS_M = 30.0
 
+# Un cruce fuera del área elegida solo recibe semáforo si le llegan autos
+# por al menos este número de calles distintas.
+MIN_APPROACH_STREETS = 2
+
 # Nodos de SUMO que no son cruces reales.
 IGNORED_NODE_TYPES = frozenset({"dead_end", "internal"})
 
@@ -101,6 +106,7 @@ SIGNALS_COLUMNS = (
     "poles",
     "pedestrian_heads",
     "match_distance_m",
+    "inside_area",
 )
 
 # Valores de la columna status.

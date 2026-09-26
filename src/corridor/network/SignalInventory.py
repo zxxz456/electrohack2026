@@ -21,6 +21,8 @@ Consideraciones:
   cuando nombran las mismas calles
 - El emparejamiento prefiere un cruce que ya tenga semáforo en OSM
   dentro del radio; si no hay, toma el cruce real más cercano
+- Fuera del área elegida solo entran cruces con al menos dos calles que
+  llegan; en la orilla la calle transversal suele faltar
 - Las funciones de agrupamiento y emparejamiento reciben datos simples
   (Pole, Junction) y no la red de SUMO, para poder probarlas sin
   construir una red
@@ -40,7 +42,7 @@ Metadatos:
 Historial:
 ------------
 Autor       Fecha           Descripción
-zxxz6       26/09/2026      Emparejar contra red base; verificación final
+zxxz6       26/09/2026      Red base, verificación y cruces fuera del área
 zxxz6       26/09/2026      Creación
 
 
@@ -52,7 +54,7 @@ import math
 import subprocess
 import tempfile
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from corridor.network.Utils import (
@@ -60,6 +62,7 @@ from corridor.network.Utils import (
     CORRIDOR_BBOX,
     IGNORED_NODE_TYPES,
     MATCH_RADIUS_M,
+    MIN_APPROACH_STREETS,
     NET_FILE_NAME,
     NETCCFG_FILE_NAME,
     PEDESTRIAN_HEADS_FIELD,
@@ -110,6 +113,7 @@ class Junction:
     node_id: ID del nodo en la red
     x_m, y_m: Posición en el sistema de coordenadas de la red, metros
     has_signal: True si ya tiene semáforo en la red construida desde OSM
+    approach_streets: Calles distintas por las que llegan autos al cruce
 
     """
 
@@ -117,6 +121,7 @@ class Junction:
     x_m: float
     y_m: float
     has_signal: bool
+    approach_streets: int = MIN_APPROACH_STREETS
 
 
 @dataclass(frozen=True)
@@ -133,6 +138,7 @@ class SignalMatch:
     poles: Número de postes del grupo
     pedestrian_heads: Cabezas peatonales sumadas del grupo
     match_distance_m: Distancia del centro del grupo al nodo emparejado
+    inside_area: True si el grupo está dentro del área elegida en OSM
 
     """
 
@@ -144,6 +150,7 @@ class SignalMatch:
     poles: int
     pedestrian_heads: int
     match_distance_m: float
+    inside_area: bool = True
 
 
 # --------------------------------------------------------------------------
@@ -198,7 +205,9 @@ def junctions_from_net(net):
     Extrae de una red de sumolib los cruces candidatos a emparejarse.
     Descarta extremos sin salida y nodos internos. Marca como
     semaforizados los nodos de tipo traffic_light y los que controla un
-    semáforo conjunto, cuyo tipo no siempre lo refleja.
+    semáforo conjunto, cuyo tipo no siempre lo refleja. Cuenta las calles
+    distintas por las que llegan autos; una calle sin nombre cuenta por
+    su ID de tramo.
 
     Entradas:
     -------
@@ -223,7 +232,14 @@ def junctions_from_net(net):
             node.getType().startswith("traffic_light")
             or node.getID() in controlled
         )
-        junctions.append(Junction(node.getID(), x_m, y_m, has_signal))
+        streets = {
+            edge.getName() or edge.getID()
+            for edge in node.getIncoming()
+            if edge.allows("passenger")
+        }
+        junctions.append(
+            Junction(node.getID(), x_m, y_m, has_signal, len(streets))
+        )
     return junctions
 
 
@@ -365,6 +381,61 @@ def match_group(group, junctions, to_lonlat):
     )
 
 
+def _inside(lon, lat, bbox):
+    """
+    Decide si un punto cae dentro de un rectángulo lon/lat.
+
+    Entradas:
+    -------
+    lon, lat: Punto, WGS84
+    bbox: (lon_min, lat_min, lon_max, lat_max)
+
+    Retorna:
+    -------
+    bool: True si el punto está dentro o en el borde
+
+    """
+    lon_min, lat_min, lon_max, lat_max = bbox
+    return lon_min <= lon <= lon_max and lat_min <= lat <= lat_max
+
+
+def select_matches(groups, junctions, to_lonlat, bbox):
+    """
+    Empareja todos los grupos y decide cuáles entran a la red.
+    Dentro del área elegida entran todos, incluso sin emparejar, para
+    que se vean en el reporte. Fuera del área, en los tramos que la red
+    conserva porque cruzan el borde, solo entran los emparejados con un
+    cruce real: al menos MIN_APPROACH_STREETS calles que llegan. En la
+    orilla la calle transversal suele quedar fuera de la descarga, y un
+    semáforo sin tráfico con qué cruzarse solo agrega demora artificial.
+
+    Entradas:
+    -------
+    groups: Lista de grupos de Pole
+    junctions: Lista de Junction de la red base
+    to_lonlat: Función (x_m, y_m) -> (lon, lat) de la red
+    bbox: Área elegida en OSM, (lon_min, lat_min, lon_max, lat_max)
+
+    Retorna:
+    -------
+    list: SignalMatch seleccionados, con inside_area marcado
+
+    """
+    by_id = {junction.node_id: junction for junction in junctions}
+    selected = []
+    for group in groups:
+        match = match_group(group, junctions, to_lonlat)
+        if _inside(match.lon, match.lat, bbox):
+            selected.append(match)
+            continue
+        if match.status == STATUS_UNMATCHED:
+            continue
+        if by_id[match.node_id].approach_streets < MIN_APPROACH_STREETS:
+            continue
+        selected.append(replace(match, inside_area=False))
+    return selected
+
+
 def build_base_net(corridor, output_path):
     """
     Construye la red de un corredor solo con los semáforos de OSM.
@@ -402,7 +473,8 @@ def match_inventory(corridor, inventory_path=SIGNAL_INVENTORY_PATH):
     Empareja todo el inventario de un corredor con su red de SUMO.
     Construye en un directorio temporal la red base, sin semáforos del
     inventario, así el resultado no depende de lo que haya en
-    generated/.
+    generated/. Incluye los cruces reales de los tramos fuera del área
+    elegida que la red conserva (ver select_matches).
 
     Entradas:
     -------
@@ -427,12 +499,19 @@ def match_inventory(corridor, inventory_path=SIGNAL_INVENTORY_PATH):
     def to_lonlat(x_m, y_m):
         return net.convertXY2LonLat(x_m, y_m)
 
-    poles = load_poles(inventory_path, CORRIDOR_BBOX[corridor], to_xy)
-    junctions = junctions_from_net(net)
-    matches = [
-        match_group(group, junctions, to_lonlat)
-        for group in cluster_poles(poles)
-    ]
+    # Los postes se leen en toda la extensión de la red, no solo en el
+    # área elegida: la red conserva completas las calles que cruzan el
+    # borde, y select_matches decide cuáles de esos cruces entran.
+    x_min, y_min, x_max, y_max = net.getBoundary()
+    net_extent = (*to_lonlat(x_min, y_min), *to_lonlat(x_max, y_max))
+
+    poles = load_poles(inventory_path, net_extent, to_xy)
+    matches = select_matches(
+        cluster_poles(poles),
+        junctions_from_net(net),
+        to_lonlat,
+        CORRIDOR_BBOX[corridor],
+    )
     return sorted(matches, key=lambda match: (-match.lat, match.lon))
 
 
@@ -456,7 +535,7 @@ def write_signals(matches, path):
 
     """
     with open(path, "w", newline="", encoding="utf-8") as handle:
-        writer = csv.writer(handle)
+        writer = csv.writer(handle, lineterminator="\n")
         writer.writerow(SIGNALS_COLUMNS)
         for match in matches:
             writer.writerow(
