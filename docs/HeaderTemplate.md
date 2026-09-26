@@ -32,6 +32,7 @@ Metadatos:
 Historial:
 ------------
 Autor       Fecha           Descripción
+zxxz6       26/09/2026      Subrayados con = en XML; agregado .polycfg
 zxxz6       25/09/2026      Traducido al español, banner FIN DE
 zxxz6       25/09/2026      Eliminadas las secciones License y Warning
 zxxz6       25/09/2026      Creación, adaptado de la plantilla del proyecto
@@ -53,7 +54,7 @@ Ambos son idénticos en todos los formatos; solo cambia la sintaxis del comentar
 |---|---|---|
 | Docstring de Python | `.py` | [ver](#1--python) |
 | Comentario hash | `.yml` `.yaml` `.toml` `.sh` `.gitignore` `Makefile` `Dockerfile` | [ver](#2--comentario-hash) |
-| Comentario de markup | `.md` `.html` `.xml` y entradas de SUMO: `.sumocfg` `.netccfg` `.rou.xml` `.add.xml` | [ver](#3--comentario-de-markup) |
+| Comentario de markup | `.md` `.html` `.xml` y entradas de SUMO: `.sumocfg` `.netccfg` `.polycfg` `.rou.xml` `.add.xml` | [ver](#3--comentario-de-markup) |
 
 Banners de fin de archivo para todas las familias: [ver](#4--banner-de-fin-de-archivo).
 
@@ -191,7 +192,9 @@ zxxz6       25/09/2026      Creación
 # Título del documento
 ```
 
-En **XML**, la declaración `<?xml ... ?>` se queda en la línea 1 y el comentario va después. El banner va tras el cierre del elemento raíz:
+En **XML**, la declaración `<?xml ... ?>` se queda en la línea 1 y el comentario va después. El banner va tras el cierre del elemento raíz.
+
+**Los subrayados de sección en XML usan `=` en lugar de `-`.** La especificación de XML prohíbe `--` dentro de un comentario, y SUMO se niega a cargar un archivo con `------------` en el encabezado. El hook lo rechaza.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -199,7 +202,11 @@ En **XML**, la declaración `<?xml ... ?>` se queda en la línea 1 y el comentar
 Corridor.sumocfg
 ========================
 
-... mismas secciones ...
+Descripción:
+============
+Qué configura este archivo.
+
+... mismas secciones, subrayadas con = ...
 
 -->
 <configuration>
