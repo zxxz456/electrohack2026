@@ -26,6 +26,7 @@ Metadatos:
 Historial:
 ------------
 Autor       Fecha           Descripción
+zxxz6       26/09/2026      Pruebas de select_matches
 zxxz6       26/09/2026      Creación
 
 
@@ -38,10 +39,12 @@ from corridor.network.SignalInventory import (
     cluster_poles,
     match_group,
     read_signal_node_ids,
+    select_matches,
     write_signals,
 )
 from corridor.network.Utils import (
     MATCH_RADIUS_M,
+    MIN_APPROACH_STREETS,
     POLE_LINK_RADIUS_M,
     SAME_STREETS_LINK_RADIUS_M,
     STATUS_ADDED,
@@ -243,6 +246,85 @@ def test_outside_radius_does_not_match():
     match = match_group([_pole(0.0)], junctions, _identity)
     assert match.status == STATUS_UNMATCHED
     assert match.node_id == ""
+
+
+# --------------------------------------------------------------------------
+# select_matches
+# --------------------------------------------------------------------------
+
+# Área de prueba en coordenadas de _identity: x entre 0 y 100.
+AREA = (0.0, -10.0, 100.0, 10.0)
+
+
+def _select(x_m, approach_streets):
+    """
+    Corre select_matches con un grupo y un cruce en la misma posición.
+
+    Entradas:
+    -------
+    x_m: Posición del grupo y del cruce sobre el eje x
+    approach_streets: Calles que llegan al cruce
+
+    Retorna:
+    -------
+    list: SignalMatch seleccionados
+
+    """
+    junctions = [Junction("j", x_m, 0.0, False, approach_streets)]
+    return select_matches([[_pole(x_m)]], junctions, _identity, AREA)
+
+
+def test_inside_area_keeps_partial_junction():
+    """
+    Verifica que dentro del área entre cualquier cruce emparejado; ahí
+    un semáforo con una sola calle es legítimo (cruce peatonal).
+
+    Entradas:
+    -------
+    None
+
+    Retorna:
+    -------
+    None
+
+    """
+    selected = _select(50.0, approach_streets=1)
+    assert [match.inside_area for match in selected] == [True]
+
+
+def test_outside_area_drops_partial_junction():
+    """
+    Verifica que en la orilla se descarte un cruce al que le falta la
+    calle transversal.
+
+    Entradas:
+    -------
+    None
+
+    Retorna:
+    -------
+    None
+
+    """
+    assert _select(150.0, MIN_APPROACH_STREETS - 1) == []
+
+
+def test_outside_area_keeps_real_crossing():
+    """
+    Verifica que en la orilla entre un cruce con las dos calles, marcado
+    como fuera del área.
+
+    Entradas:
+    -------
+    None
+
+    Retorna:
+    -------
+    None
+
+    """
+    selected = _select(150.0, MIN_APPROACH_STREETS)
+    assert [match.inside_area for match in selected] == [False]
 
 
 # --------------------------------------------------------------------------
