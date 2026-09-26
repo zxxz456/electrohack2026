@@ -28,6 +28,7 @@ Metadatos:
 Historial:
 ------------
 Autor       Fecha           Descripción
+zxxz6       26/09/2026      Sección de la red vial de CU BUAP
 zxxz6       25/09/2026      Instalación con PyTorch CUDA 12.8 para usar la GPU
 zxxz6       25/09/2026      Creación
 
@@ -101,6 +102,18 @@ python -c "import torch; print(torch.cuda.is_available(), \
 ```
 
 Si `sumo-gui` falla por librerías gráficas faltantes, instala SUMO desde `ppa:sumo/stable` y apunta `SUMO_HOME` a `/usr/share/sumo`. Para entrenar no se necesita la interfaz gráfica.
+
+## Red vial
+
+La simulación usa la zona alrededor de CU BUAP. El extracto de OpenStreetMap está congelado en `networks/puebla/Corridor.osm.xml.gz`, así todos trabajan sobre el mismo mapa aunque OSM cambie. La red de SUMO no se versiona: se construye a partir de ese extracto con un comando.
+
+```bash
+source .venv/bin/activate
+scripts/BuildNetwork.sh
+sumo-gui -c networks/puebla/Corridor.sumocfg
+```
+
+Las opciones de construcción están en `networks/puebla/Corridor.netccfg`: semáforos de tiempo fijo, banquetas y cruces peatonales. Los cambios a la red (semáforos que faltan en OSM, vueltas prohibidas, cruces) se declaran ahí o en archivos de parche dentro de `networks/puebla/`, nunca editando `generated/` con netedit, porque la siguiente construcción los borra.
 
 ## Estructura del repositorio
 
