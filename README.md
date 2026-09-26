@@ -40,6 +40,7 @@ Integrantes:
 - Dr. Saul Pomares Hernandez
 - Sarah
 - Bryan Violante
+- Helen Alondra Pillado Hernández
 
 Simulación de un corredor con intersecciones semaforizadas (Puebla, Mexico), donde cada semáforo es controlado por un agente de RL (en principio es solo simulacion pero se plantea que sean solares). Los agentes comparten unos pocos bytes de estado con sus vecinos inmediatos (cola, fase activa, tiempo en la fase y siguiente fase prevista) en un mensaje del tamaño de LoRa, y la coordinación del corredor emerge de esa anticipación local, sin controlador central.
 
