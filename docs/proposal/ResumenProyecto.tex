@@ -1,0 +1,521 @@
+% ResumenProyecto.tex
+% ========================
+%
+%
+% Descripción:
+% ------------
+% Documento para enviar al Dr Pomares
+%
+%
+%
+%
+% Metadatos:
+% ----------
+% * Autor: zxxz6 (Bryan Violante Arriaga)
+% * Versión: 1.0.0
+%
+%
+% Historial:
+% ------------
+% Autor       Fecha           Descripción
+% zxxz6       25/09/2026      Creación
+%
+
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[spanish,es-tabla,es-noshorthands]{babel}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage[section]{placeins}
+\usepackage{float}
+\usepackage{needspace}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{serieA}{HTML}{2A78D6}
+\definecolor{serieB}{HTML}{EB6834}
+\definecolor{tinta}{HTML}{0B0B0B}
+\definecolor{tintados}{HTML}{52514E}
+\definecolor{linea}{HTML}{D9D8D3}
+\definecolor{fondo}{HTML}{F4F3EF}
+
+\captionsetup{font=small,labelfont=bf}
+\setlist{itemsep=2pt,topsep=4pt}
+\renewcommand{\arraystretch}{1.25}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+
+\newcommand{\nota}[1]{%
+  \par\smallskip\noindent\fcolorbox{linea}{fondo}{%
+    \parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\small #1}}%
+  \par\smallskip}
+
+\hypersetup{
+  pdftitle={Semáforos solares coordinados con sus vecinos},
+  pdfsubject={ElectroHack 2026, documento de trabajo},
+}
+
+\begin{document}
+
+% ------------------------------------------------------------------ portada
+\begin{center}
+  {\LARGE\bfseries Control de tráfico agent-based}\par
+  \vspace{4pt}
+  {\large Control por aprendizaje por refuerzo para corredores en Puebla}\par
+  \vspace{12pt}
+  {\small
+  Integrantes: Sarah, Bryan Violante Arriaga, Helen Alondra Pillado Hernández\\
+  Asesor: Dr.\ Saúl Pomares Hernández\\[2pt]
+  Repositorio: \url{https://github.com/zxxz456/electrohack2026}}
+\end{center}
+
+
+\begin{abstract}
+\noindent Los semáforos de Puebla operan casi todos con ciclos fijos: no responden a
+la demanda real, provocan paradas y arranques innecesarios y dependen de la red
+eléctrica. Proponemos un corredor de intersecciones semaforizadas alrededor de
+Ciudad Universitaria (BUAP) en el que cada semáforo es un nodo autónomo alimentado
+con energía solar y controlado por un agente de aprendizaje por refuerzo. Cada
+agente toma en cuenta el estado de sus intersecciones vecinas, recibido por radio
+LoRa en un mensaje de 5 bytes, y de esa anticipación local emerge la coordinación
+del corredor sin un controlador central. El sistema optimiza a la vez el flujo
+vehicular, el consumo de energia (kWh), consumo de energia (autos eléctricos), 
+las emisiones del corredor, y el tiempo de cruce peatonal. Todo se evalua en 
+simulación con SUMO sobre la red vial real,
+completada con el inventario municipal de semáforos, y contra la operación actual
+de tiempo fijo (baseline, no se construye hardware).
+\end{abstract}
+
+% ------------------------------------------------------------------ 1
+\section{Contexto y problema}
+
+Un semáforo de tiempo fijo cambia a verde según un plan calculado para una
+demanda promedio. Cuando la demanda cambia (lo que ocurre casi todo el tiempo), el
+plan deja de ajustarse, hay colas en un acceso mientras el otro recibe verde
+vacío, y los vehículos se detienen y arrancan más veces de las necesarias. Cada
+parada y arranque cuesta energía (kilowatt-hora en un vehículo eléctrico,
+combustible y emisiones en uno de combustión). Además, el semáforo depende de la
+energia electrica, una falla en el sistema electrico deja el cruce sin control.
+
+% ------------------------------------------------------------------ 2
+\section{Qué proponemos}
+
+\subsection{Un agente por intersección, atento a sus vecinos}
+
+Cada cruce o intersección tiene su propio controlador, un agente de aprendizaje por
+refuerzo (DQN) que decide cada $x$ segundos si extiende la fase actual o avanza a
+la siguiente. Además de su propio estado (colas, velocidades, fase activa), el
+agente recibe de cada intersección vecina:
+
+\begin{itemize}
+  \item la longitud de cola en la aproximación del semaforo vecino que descarga hacia él;
+  \item la fase activa del semaforo vecino y el tiempo que lleva en ella;
+  \item la \emph{intención} del semaforo vecino: la fase que piensa activar a continuación.
+\end{itemize}
+
+Con eso el agente puede anticiparse: ``el semaforo de la intersección $Y$ va a dejar 
+pasar $X$ autos que llegan en aprox. $Z$ segundos, combiene estar en verde''. La $onda$ verde no se
+programa desde un centro de control; emerge de decisiones locales.
+
+Hay tres niveles posibles de coordinación. Este proyecto implementara hasta el
+segundo:
+
+\begin{enumerate}
+  \item Compartir colas: solo la cola del vecino entra a la observación.
+  \item \textbf{Compartir colas, fase e intención} (objetivo del proyecto).
+  \item Negociación explícita con un crítico centralizado (MAPPO, QMIX). Queda como
+        trabajo futuro por el riesgo de no converger a tiempo.
+\end{enumerate}
+
+\subsection{Comunicación mínima entre nodos}
+
+En el nodo real la información viajaria por radio LoRa (SX1276), con alcance de
+kilómetros y consumo despreciable. El mensaje cabe en 5 bytes
+(tabla~\ref{tab:mensaje}); a un mensaje por paso de decisión, cada nodo transmite
+1~byte por segundo por vecino. En la simulación la observación de vecinos se
+construye codificando y decodificando exactamente ese mensaje, así el agente ve
+los mismos valores cuantizados que llevaría el radio, con un paso de retraso.
+
+\begin{table}[!htbp]
+\centering\small
+\caption{Mensaje entre intersecciones vecinas.}
+\label{tab:mensaje}
+\begin{tabular}{lll}
+\toprule
+Campo & Codificación & Bits\\
+\midrule
+Identificador del emisor & entero de 8 bits & 8\\
+Número de secuencia & entero de 8 bits & 8\\
+Cola hacia el receptor (vehículos, tope 255) & entero de 8 bits & 8\\
+Fase activa & índice de 2 bits & 2\\
+Fase prevista (intención) & índice de 2 bits & 2\\
+Tiempo en la fase (s, tope 63) & 6 bits & 6\\
+Demanda peatonal & 1 bit & 1\\
+Reservado & -- & 5\\
+\midrule
+\textbf{Total} & & \textbf{40 bits = 5 bytes}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Nodo autónomo alimentado con energía solar}
+
+Cada intersección se concibe como un nodo sin dependencia eléctrica, panel
+fotovoltaico, controlador de carga MPPT, batería LiFePO4, sensado por radar de
+onda continua (sin obra en el pavimento) y el enlace LoRa
+(figura~\ref{fig:nodo}). El nodo sigue operando durante un apagón, y si se pierde
+el enlace con los vecinos, cada intersección sigue funcionando con su política
+local.
+
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  caja/.style={draw=tintados, rounded corners=2pt, align=center, minimum height=9mm, inner sep=4pt, fill=white},
+  ctrl/.style={caja, draw=serieA, line width=0.9pt, fill=serieA!6},
+  flecha/.style={-{Stealth[length=2mm]}, tintados, line width=0.6pt},
+  energia/.style={-{Stealth[length=2mm]}, serieB, line width=0.9pt},
+  node distance=6mm and 9mm]
+  \node[ctrl, minimum width=40mm] (ctrl) {Controlador del cruce\\[1pt]\footnotesize agente DQN + máscara de seguridad};
+  \node[caja, left=of ctrl] (radar) {Radar de onda\\continua (accesos)};
+  \node[caja, right=of ctrl] (led) {Cabezas LED\\vehiculares y peatonales};
+  \node[caja, above=of ctrl] (lora) {Radio LoRa SX1276};
+  \node[caja, above left=6mm and 2mm of lora] (vecA) {Vecino anterior};
+  \node[caja, above right=6mm and 2mm of lora] (vecB) {Vecino siguiente};
+  \node[caja, below=11mm of ctrl, xshift=-30mm] (panel) {Panel FV\\600--800 Wp};
+  \node[caja, right=7mm of panel] (mppt) {MPPT\\24 V};
+  \node[caja, right=7mm of mppt] (bat) {Batería LiFePO4\\24 V};
+  \draw[flecha] (radar) -- node[above, font=\footnotesize]{colas} (ctrl);
+  \draw[flecha] (ctrl) -- node[above, font=\footnotesize]{fase} (led);
+  \draw[flecha, <->] (ctrl) -- (lora);
+  \draw[flecha, <->] (lora) -- node[left, font=\footnotesize, pos=0.4]{5 B} (vecA);
+  \draw[flecha, <->] (lora) -- node[right, font=\footnotesize, pos=0.4]{5 B} (vecB);
+  \draw[energia] (panel) -- (mppt);
+  \draw[energia] (mppt) -- (bat);
+  \draw[energia] (bat.north) |- ([yshift=-4mm]ctrl.south) -- (ctrl.south);
+\end{tikzpicture}
+\caption{Arquitectura propuesta del nodo de una intersección. En naranja, el flujo
+de energía; en gris, información. El mensaje con cada vecino mide 5 bytes.}
+\label{fig:nodo}
+\end{figure}
+
+IMPORTANTE: En el proyecto no se piensa implementar HW, solo se realizara la simulacion.
+
+\subsection{Seguridad fuera del agente}
+
+Las restricciones de seguridad vial no se aprenden, se imponendian antes de que el
+agente elija, enmascarando las acciones ilegales. Una acción que las violaría
+nunca llegaria al semáforo, así que el agente no podria aprender a romperlas.
+
+\begin{table}[!htbp]
+\centering\small
+\caption{Restricciones duras aplicadas a todos los controladores.}
+\begin{tabular}{ll}
+\toprule
+Restricción & Valor\\
+\midrule
+Verde mínimo vehicular & 10 s\\
+Ámbar & 3 s, fijo\\
+Todo rojo & 2 s\\
+Verde máximo & 60 s (evita que un acceso espere indefinidamente)\\
+Verde peatonal mínimo & tiempo de arranque + ancho del cruce / 1.0 m/s\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Qué optimizaria el agente}
+
+La recompensa combina los tres objetivos y castiga el cambio frecuente de fase,
+un vicio conocido de los agentes de semáforos:
+\begin{equation}
+  r = -\left(\alpha\, W_{\text{veh}} + \beta\, E_{\text{corredor}} + \gamma\, C_{\text{fase}} + \delta\, W_{\text{peat}}\right),
+\end{equation}
+donde $W_{\text{veh}}$ es la espera vehicular normalizada, $E_{\text{corredor}}$
+la energía consumida por los vehículos del corredor (modelos HBEFA de combustión y
+modelo eléctrico de SUMO), $C_{\text{fase}}$ los cambios de fase y
+$W_{\text{peat}}$ la espera peatonal. Los pesos se reportan como estudio de
+ablación. Para no desestabilizar el entrenamiento, primero se entrenaria solo con
+$\alpha$ y $\gamma$, y luego se agregarian $\beta$ y $\delta$.
+
+
+
+
+% ------------------------------------------------------------------ 4
+\section{Alcance}
+
+\begin{table}[!htbp]
+\centering\small
+\caption{Qué entra y qué no entra en el proyecto.}
+\begin{tabularx}{\linewidth}{@{}L L@{}}
+\toprule
+\textbf{Dentro del alcance} & \textbf{Fuera del alcance, y por qué}\\
+\midrule
+Simulación en SUMO de la red real alrededor de CU~BUAP, con sus semáforos reales. &
+Construcción de hardware: solo dimensionamiento y cotizaciones reales.\\
+Cinco controladores comparados (sección~\ref{sec:eval}) en cuatro escenarios. &
+Un modelo de lenguaje como controlador: un modelo de 7B consume 10--15 W
+sostenidos, lo mismo que el propio semáforo.\\
+Coordinación de nivel 2: colas, fase e intención de los vecinos. &
+Aprendizaje multiagente con crítico centralizado (MAPPO, QMIX): trabajo futuro.\\
+Métricas de tráfico, energía, emisiones y peatones contra tiempo fijo. &
+Despliegue en vía pública.\\
+Dimensionamiento del nodo solar con irradiancia de PVGIS. &
+Calibración con aforos vehiculares reales, salvo que se consigan a tiempo.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ------------------------------------------------------------------ 5
+\section{Zona de estudio y datos usados hasta ahora}
+
+\subsection{Zona}
+
+Se propone la periferia de Ciudad Universitaria de la BUAP un anillo formado por el
+Blvd.\ Valsequillo, la Av.\ San Claudio, la 24 Sur y el Blvd.\ Municipio Libre,
+con intersecciones semaforizadas consecutivas y flujo alto en horas pico (experiencia
+propia), creo que es una muestra representativa pero se pueden proponer alternativas. 
+
+El área descargada de OpenStreetMap mide $2.14 \times 3.52$~km (7.5~km\textsuperscript{2});
+la red simulada suma unos 262~km de calle vehicular, 2{,}187 cruces y 2{,}653 cruces
+peatonales (figura~\ref{fig:area}).
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.62\linewidth]{AreaSemaforos.pdf}
+\caption{Red vial simulada y sus 40 semáforos. Los círculos azules son
+semáforos agregados desde el inventario municipal; los cuadros naranjas ya venían
+en OpenStreetMap. La red se extiende fuera del área descargada porque conserva
+completas las calles que cruzan el borde.}
+\label{fig:area}
+\end{figure}
+
+\subsection{Datos}
+
+\begin{table}[!htbp]
+\centering\small
+\caption{Fuentes de datos del proyecto.}
+\label{tab:datos}
+\begin{tabularx}{\linewidth}{@{}l L l@{}}
+\toprule
+Fuente & Uso & Estado\\
+\midrule
+OpenStreetMap~\cite{osm} & Red vial: calles, carriles, sentidos, vueltas. Extracto congelado el 26/09/2026. & En uso\\
+Inventario de Semáforos SEMOVINFRA 2021~\cite{inventario} & Ubicación de los semáforos reales. 3{,}283 postes en la ciudad, 156 en el área. & En uso\\
+Inventario SEMOVINFRA, tabla 2020~\cite{inventario} & Comparación entre levantamientos (3{,}054 postes). & Guardado\\
+Modelos de emisión y energía de SUMO~\cite{sumoemisiones,kurczveil} & Consumo y emisiones por vehículo. & Integrado en SUMO\\
+PVGIS~\cite{pvgis} & Irradiancia para dimensionar el nodo solar. & Pendiente\\
+Aforos vehiculares & Calibrar la demanda de hora pico. & Por conseguir\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Semáforos faltantes}
+
+OpenStreetMap solo tenía 8 semáforos en la zona. El inventario municipal registra
+36 intersecciones semaforizadas dentro del área. Como cada registro del
+inventario es un poste y no una intersección, agrupamos los postes cercanos (a
+35~m o menos, o a 80~m si nombran las mismas calles) y emparejamos cada grupo con el
+cruce más cercano de la red, a menos de 30~m. Todas las intersecciones quedaron a
+menos de 11~m de su cruce. Fuera del área, en los tramos que la red conserva, solo
+agregamos semáforos en cruces completos: en la orilla la calle transversal suele
+faltar, y un semáforo ahí solo agregaría demora artificial.
+
+\begin{table}[!htbp]
+\centering\small
+\caption{Semáforos de la red simulada.}
+\begin{tabular}{lr}
+\toprule
+& Cantidad\\
+\midrule
+Intersecciones del inventario dentro del área & 36\\
+Intersecciones del inventario en la orilla, con cruce completo & 1\\
+\midrule
+Intersecciones del inventario en la red & 37\\
+\quad ya presentes en OpenStreetMap & 5\\
+\quad agregadas desde el inventario & 32\\
+\quad con cabezas peatonales & 11\\
+Semáforos de OpenStreetMap que no están en el inventario & 3\\
+\midrule
+\textbf{Semáforos en la red} & \textbf{40}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Alrededor de CU hay 11 intersecciones semaforizadas: cinco sobre San Claudio (con
+14 Sur, 18 Sur, la entrada a la Facultad de Derecho, 22 Sur y 24 Sur), dos sobre
+Municipio Libre (con 24 Sur y con Valsequillo) y cuatro sobre Valsequillo (con
+Universidad de Chapingo, UNAM, 63~F Oriente y 14 Sur). Son las candidatas a
+operar con agentes; el resto de la red sigue con tiempo fijo. Dos pares están a
+menos de 120~m entre sí y probablemente convenga controlar cada par como una sola
+intersección; si el tiempo no alcanza, el plan es reducir el experimento a un arco
+de 4 o 5 intersecciones sobre San Claudio.
+
+En caso de cambiar de punto de interes, o querer probar otras zonas, se puede 
+realizar el mismo procedimiento para cualquier otra zona de interés
+
+\subsection{Reproducibilidad}
+
+El proyecto vive en un repositorio con el extracto de OpenStreetMap congelado, el
+inventario, las configuraciones y el código. Cualquier integrante reconstruye la
+misma red con un solo comando; la construcción termina verificando que estén
+todos los semáforos declarados y se detiene con error si falta alguno. Verificamos
+que la red se reconstruye idéntica en un directorio limpio. La
+figura~\ref{fig:sumo} muestra la red cargada en el simulador.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.7\linewidth]{VistaSumo.png}
+\caption{La red alrededor de CU~BUAP en la interfaz gráfica de SUMO.}
+\label{fig:sumo}
+\end{figure}
+
+% ------------------------------------------------------------------ 6
+\section{Cómo lo vamos a evaluar}
+\label{sec:eval}
+
+\subsection{Controladores}
+
+\begin{table}[!htbp]
+\centering\small
+\caption{Controladores comparados.}
+\begin{tabularx}{\linewidth}{@{}c l L@{}}
+\toprule
+\# & Controlador & Papel\\
+\midrule
+1 & Tiempo fijo & Línea base obligatoria: cómo operan hoy los semáforos. Planes calculados con el método de Webster~\cite{webster}.\\
+2 & Max-pressure~\cite{maxpressure} & Regla sin aprendizaje con garantías de estabilidad. Es el plan~B si el DQN no converge a tiempo.\\
+3 & DQN sin vecinos & Mismo agente, solo con observación local. Aísla cuánto aporta la coordinación.\\
+4 & DQN con vecinos & El controlador principal.\\
+5 & Jev (TypeSafe AI) & Opcional, sujeto a acceso a la API. Decisiones tipadas con nivel de confianza; cae a max-pressure si la confianza es baja.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Los agentes DQN~\cite{dqn} se entrenan de forma independiente, uno por intersección
+(\emph{Independent Q-Learning}~\cite{tan}), con Stable-Baselines3~\cite{sb3} sobre
+un entorno Gymnasium construido a partir de sumo-rl~\cite{sumorl} y SUMO~\cite{sumo}.
+\textbf{La comparación entre el controlador~3 y el~4 es el resultado más
+importante}: mismo agente y mismo código, con el bloque de vecinos encendido o
+apagado.
+
+\subsection{Métricas}
+
+Todas se reportan contra tiempo fijo, como media y dispersión sobre al menos cinco
+semillas de evaluación distintas de las de entrenamiento, con los mismos archivos
+de demanda para todos los controladores.
+
+\begin{table}[!htbp]
+\centering\small
+\caption{Métricas.}
+\begin{tabularx}{\linewidth}{@{}l L@{}}
+\toprule
+Dimensión & Indicador\\
+\midrule
+Tráfico & Tiempo de espera medio, paradas por vehículo, longitud de cola.\\
+Coordinación & Paradas en el corredor completo, tiempo de viaje de extremo a extremo.\\
+Energía & kWh consumidos en el corredor, CO$_2$ evitado.\\
+Peatones & Tiempo de espera peatonal, cruces con verde suficiente.\\
+Económica & Costo por intersección, retorno frente a la acometida eléctrica.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Escenarios}
+
+\begin{enumerate}
+  \item Tráfico típico de hora pico.
+  \item Tráfico asimétrico, con un sentido dominante: donde la coordinación debería rendir más.
+  \item Pérdida del enlace con los vecinos: observaciones de vecinos en cero.
+  \item Incidente: un carril bloqueado en una intersección intermedia.
+\end{enumerate}
+
+% ------------------------------------------------------------------ 7
+\section{Qué esperamos obtener}
+
+No tenemos resultados todavía. Estas son las hipótesis que el proyecto pone a
+prueba; cualquiera puede resultar falsa, y en ese caso se reporta como tal.
+
+\begin{enumerate}[label=\textbf{H\arabic*.}]
+  \item Max-pressure reduce la espera media frente a tiempo fijo en hora pico.
+  \item El DQN con vecinos reduce las paradas en el corredor y el tiempo de viaje de
+        extremo a extremo frente al DQN sin vecinos, sobre todo con tráfico asimétrico.
+  \item Al perder el enlace, el DQN con vecinos se degrada hacia el desempeño del DQN
+        local, sin dejar de operar.
+  \item Menos paradas y arranques se traducen en menos energía y emisiones por
+        vehículo-kilómetro en el corredor.
+\end{enumerate}
+
+Entregables: la simulación reproducible, las comparaciones con sus figuras, el
+estudio de ablación de la recompensa, el dimensionamiento y costeo del nodo solar,
+y los documentos del concurso (ficha técnica, memoria de cálculo y presentación).
+
+
+
+% ------------------------------------------------------------------ referencias
+\begin{thebibliography}{99}
+\small
+\setlength{\itemsep}{0pt}
+\bibitem{sumo} P.~A. Lopez, M.~Behrisch, L.~Bieker-Walz, J.~Erdmann, Y.-P.~Flötteröd,
+R.~Hilbrich, L.~Lücken, J.~Rummel, P.~Wagner y E.~Wießner. Microscopic traffic
+simulation using SUMO. \emph{21st IEEE International Conference on Intelligent
+Transportation Systems (ITSC)}, 2018, pp.~2575--2582.
+
+\bibitem{colight} H.~Wei, N.~Xu, H.~Zhang, G.~Zheng, X.~Zang, C.~Chen, W.~Zhang,
+Y.~Zhu, K.~Xu y Z.~Li. CoLight: Learning network-level cooperation for traffic
+signal control. \emph{Proceedings of the 28th ACM International Conference on
+Information and Knowledge Management (CIKM)}, 2019, pp.~1913--1922.
+
+\bibitem{maxpressure} P.~Varaiya. Max pressure control of a network of signalized
+intersections. \emph{Transportation Research Part~C}, 36:177--195, 2013.
+
+\bibitem{dqn} V.~Mnih et al. Human-level control through deep reinforcement
+learning. \emph{Nature}, 518:529--533, 2015.
+
+\bibitem{tan} M.~Tan. Multi-agent reinforcement learning: Independent vs.\
+cooperative agents. \emph{Proceedings of the 10th International Conference on
+Machine Learning (ICML)}, 1993, pp.~330--337.
+
+\bibitem{sb3} A.~Raffin, A.~Hill, A.~Gleave, A.~Kanervisto, M.~Ernestus y
+N.~Dormann. Stable-Baselines3: Reliable reinforcement learning implementations.
+\emph{Journal of Machine Learning Research}, 22(268):1--8, 2021.
+
+\bibitem{sumorl} L.~N. Alegre. SUMO-RL. Repositorio de software, 2019.
+\url{https://github.com/LucasAlegre/sumo-rl}
+
+\bibitem{webster} F.~V. Webster. \emph{Traffic Signal Settings}. Road Research
+Technical Paper No.~39, HMSO, Londres, 1958.
+
+\bibitem{kurczveil} T.~Kurczveil, P.~A. López y E.~Schnieder. Implementation of an
+energy model and a charging infrastructure in SUMO. En \emph{Simulation of Urban
+Mobility (SUMO 2013)}, LNCS 8594, Springer, 2014.
+
+\bibitem{sumoemisiones} Eclipse SUMO. Documentación: modelos de emisiones.
+\url{https://sumo.dlr.de/docs/Models/Emissions.html}
+
+\bibitem{inventario} Gobierno Municipal de Puebla, Secretaría de Movilidad e
+Infraestructura. \emph{Inventario de Semáforos SEMOVINFRA (histórico)}, versiones
+2020 y 2021. Portal de Datos Abiertos de Puebla Capital, Licencia Libre Uso MX.
+\url{https://datos.pueblacapital.gob.mx/dataset/inventario-de-sem\%C3\%A1foros}.
+Consultado el 26/09/2026.
+
+\bibitem{osm} Personas contribuyentes de OpenStreetMap. Datos bajo licencia ODbL.
+\url{https://www.openstreetmap.org}. Extracto descargado el 26/09/2026.
+
+\bibitem{pvgis} Comisión Europea, Joint Research Centre. Photovoltaic Geographical
+Information System (PVGIS). \url{https://re.jrc.ec.europa.eu/pvg_tools/}
+\end{thebibliography}
+
+\end{document}
+
+%######################### FIN DE RESUMENPROYECTO.TEX ##########################
+%###############################################################################
