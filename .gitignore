@@ -15,6 +15,8 @@
 # - data/ conserva entradas crudas pequeñas (cotizaciones, CSV de
 #   irradiancia); los extractos grandes de OSM se ignoran y se vuelven a
 #   descargar
+# - Los auxiliares de LaTeX se ignoran solo dentro de docs/, para que
+#   patrones como *.log o *.out no escondan otros archivos del repo
 #
 #
 # Metadatos:
@@ -26,6 +28,7 @@
 # Historial:
 # ------------
 # Autor       Fecha           Descripción
+# zxxz6       27/09/2026      Auxiliares de compilación de LaTeX en docs/
 # zxxz6       25/09/2026      Traducido al español
 # zxxz6       25/09/2026      Eliminadas las secciones License y Warning
 # zxxz6       25/09/2026      Creación
@@ -53,6 +56,25 @@ data/osm/
 .vscode/
 .idea/
 .DS_Store
+
+# Auxiliares de compilación de LaTeX (latexmk, pdflatex, SyncTeX,
+# BibTeX y biber)
+docs/**/*.aux
+docs/**/*.log
+docs/**/*.out
+docs/**/*.toc
+docs/**/*.lof
+docs/**/*.lot
+docs/**/*.fls
+docs/**/*.fdb_latexmk
+docs/**/*.synctex.gz
+docs/**/*.synctex(busy)
+docs/**/*.bbl
+docs/**/*.blg
+docs/**/*.bcf
+docs/**/*.run.xml
+docs/**/*.xdv
+docs/**/*.dvi
 
 # Configuración local de Claude
 .claude/settings.local.json
