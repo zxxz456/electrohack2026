@@ -28,6 +28,8 @@ Metadatos:
 Historial:
 ------------
 Autor       Fecha           Descripción
+zxxz6       01/10/2026      Cuatro controladores, sin max-pressure ni Jev
+zxxz6       01/10/2026      Sin implementación física: solo simulación
 zxxz6       26/09/2026      Cruces fuera del área y tabla de semáforos
 zxxz6       26/09/2026      Semáforos del inventario municipal
 zxxz6       26/09/2026      Sección de la red vial de CU BUAP
@@ -45,13 +47,13 @@ Integrantes:
 - Bryan Violante
 - Helen Alondra Pillado Hernández
 
-Simulación de un corredor con intersecciones semaforizadas (Puebla, Mexico), donde cada semáforo es controlado por un agente de RL (en principio es solo simulacion pero se plantea que sean solares). Los agentes comparten unos pocos bytes de estado con sus vecinos inmediatos (cola, fase activa, tiempo en la fase y siguiente fase prevista) en un mensaje del tamaño de LoRa, y la coordinación del corredor emerge de esa anticipación local, sin controlador central.
+Simulación de un corredor con intersecciones semaforizadas (Puebla, Mexico), donde cada semáforo es controlado por un agente de RL. El proyecto es solo de simulación. Los agentes comparten unos pocos bytes de estado con sus vecinos inmediatos (cola, fase activa, tiempo en la fase y siguiente fase prevista) en un mensaje mínimo, y la coordinación del corredor emerge de esa anticipación local, sin controlador central.
 
 El sistema optimiza tres cosas a la vez: flujo vehicular, energía y emisiones del corredor, y tiempo de cruce peatonal.
 
 Este proyecto no propone un algoritmo nuevo, pero se combinan diferentes aspectos de otros trabajos:
 
-- **Comunicación mínima.** Un mensaje de 5 bytes por vecino en cada paso de decisión, en lugar de embeddings aprendidos. Cabe en un radio SX1276 con consumo despreciable.
+- **Comunicación mínima.** Un mensaje de 5 bytes por vecino en cada paso de decisión, en lugar de embeddings aprendidos.
 - **Energía y emisiones como objetivos de primera clase**, a partir de los modelos HBEFA y de vehículo eléctrico de SUMO.
 - **Peatones en la recompensa**, con límites de seguridad aplicados fuera del agente.
 
@@ -61,10 +63,9 @@ Cuando cambia de fase cada semaforo? Son las distintas formas de medir cuanto me
 | # | Controlador | Propósito |
 |---|---|---|
 | 1 | Tiempo fijo | Línea base: cómo operan hoy los semáforos |
-| 2 | Max-pressure | Regla sin aprendizaje con garantías de estabilidad; plan B |
-| 3 | DQN, solo observación local | Aísla cuánto aporta la coordinación |
-| 4 | DQN con estado de vecinos | Controlador principal |
-| 5 | Jev (TypeSafe AI) | Opcional, sujeto a acceso a la API |
+| 2 | DQN, solo observación local | Aísla cuánto aporta la coordinación |
+| 3 | DQN con vecinos directos | Mensaje crudo de los vecinos inmediatos |
+| 4 | DQN con onda causal difusa | Controlador principal: estado de varios saltos ponderado por su fuerza de onda |
 
 
 ## Instalación
@@ -152,13 +153,12 @@ src/corridor/
   network/       importación de OSM, netconvert, generación de demanda
   link/          mensaje entre vecinos: esquema, cuantización, pérdida
   env/           entorno Gymnasium: observación, máscara de acciones, recompensa
-  controllers/   tiempo fijo, max-pressure, DQN, Jev
+  controllers/   tiempo fijo y variantes de DQN
   training/      entrenamiento DQN independiente por intersección
   evaluation/    ejecución de escenarios, métricas, energía, figuras
-  solar/         irradiancia, dimensionamiento del nodo, costeo
 scripts/         puntos de entrada de línea de comandos, sin lógica
 tests/           pytest, con la misma estructura que src/corridor/
-data/            entradas crudas: extracto OSM, PVGIS, cotizaciones
+data/            entradas crudas: extracto OSM, inventario de semáforos
 results/         corridas, modelos, logs, figuras (no versionado)
 report/          reporte y diapositivas del concurso
 ```
