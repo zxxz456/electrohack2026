@@ -18,6 +18,8 @@
 % Historial:
 % ------------
 % Autor       Fecha           Descripción
+% zxxz6       01/10/2026      Update con propuesta basada en tesis que compartio 
+%                             el Dr. Pomares
 % zxxz6       25/09/2026      Creación
 %
 
@@ -61,7 +63,7 @@
   \par\smallskip}
 
 \hypersetup{
-  pdftitle={Semáforos solares coordinados con sus vecinos},
+  pdftitle={Semáforos coordinados con sus vecinos},
   pdfsubject={ElectroHack 2026, documento de trabajo},
 }
 
@@ -81,19 +83,20 @@
 
 
 \begin{abstract}
-\noindent Los semáforos de Puebla operan casi todos con ciclos fijos: no responden a
-la demanda real, provocan paradas y arranques innecesarios y dependen de la red
-eléctrica. Proponemos un corredor de intersecciones semaforizadas alrededor de
-Ciudad Universitaria (BUAP) en el que cada semáforo es un nodo autónomo alimentado
-con energía solar y controlado por un agente de aprendizaje por refuerzo. Cada
-agente toma en cuenta el estado de sus intersecciones vecinas, recibido por radio
-LoRa en un mensaje de 5 bytes, y de esa anticipación local emerge la coordinación
-del corredor sin un controlador central. El sistema optimiza a la vez el flujo
+\noindent Los semáforos de Puebla operan casi todos con ciclos fijos, no responden a
+la demanda real y provocan paradas y arranques innecesarios. Proponemos un
+corredor de intersecciones semaforizadas alrededor de Ciudad Universitaria (BUAP)
+en el que cada semáforo es controlado por un agente de aprendizaje por refuerzo.
+Cada agente toma en cuenta el estado de las intersecciones de su entorno, que se
+difunde de semáforo ($RSU$) en semáforo ($RSU$) como una onda causal difusa. 
+De esa anticipación local se espera la emergencia de la coordinación del corredor 
+sin un controlador central. 
+El sistema optimiza a la vez el flujo
 vehicular, el consumo de energia (kWh), consumo de energia (autos eléctricos), 
 las emisiones del corredor, y el tiempo de cruce peatonal. Todo se evalua en 
 simulación con SUMO sobre la red vial real,
 completada con el inventario municipal de semáforos, y contra la operación actual
-de tiempo fijo (baseline, no se construye hardware).
+de tiempo fijo (baseline).
 \end{abstract}
 
 % ------------------------------------------------------------------ 1
@@ -104,8 +107,7 @@ demanda promedio. Cuando la demanda cambia (lo que ocurre casi todo el tiempo), 
 plan deja de ajustarse, hay colas en un acceso mientras el otro recibe verde
 vacío, y los vehículos se detienen y arrancan más veces de las necesarias. Cada
 parada y arranque cuesta energía (kilowatt-hora en un vehículo eléctrico,
-combustible y emisiones en uno de combustión). Además, el semáforo depende de la
-energia electrica, una falla en el sistema electrico deja el cruce sin control.
+combustible y emisiones en uno de combustión).
 
 % ------------------------------------------------------------------ 2
 \section{Qué proponemos}
@@ -115,101 +117,151 @@ energia electrica, una falla en el sistema electrico deja el cruce sin control.
 Cada cruce o intersección tiene su propio controlador, un agente de aprendizaje por
 refuerzo (DQN) que decide cada $x$ segundos si extiende la fase actual o avanza a
 la siguiente. Además de su propio estado (colas, velocidades, fase activa), el
-agente recibe de cada intersección vecina:
+agente recibe información de las intersecciones de su entorno: de sus vecinas
+inmediatas y, retransmitida de semáforo en semáforo, de intersecciones más lejanas. De
+cada una conoce:
 
 \begin{itemize}
-  \item la longitud de cola en la aproximación del semaforo vecino que descarga hacia él;
-  \item la fase activa del semaforo vecino y el tiempo que lleva en ella;
-  \item la \emph{intención} del semaforo vecino: la fase que piensa activar a continuación.
+  \item la longitud de cola en la aproximación que descarga hacia él
+  \item su fase activa y el tiempo que lleva en ella
+  \item su \emph{intención} (la fase que piensa activar a continuación)
+  \item la \emph{fuerza de onda} de ese dato (un valor entre 0 y 1 que estima qué
+        tan útil le es, según cuántos saltos dio, cuánto tiempo lleva viajando y
+        qué tan lejos está su origen)
 \end{itemize}
 
 Con eso el agente puede anticiparse: ``el semaforo de la intersección $Y$ va a dejar 
-pasar $X$ autos que llegan en aprox. $Z$ segundos, combiene estar en verde''. La $onda$ verde no se
-programa desde un centro de control; emerge de decisiones locales.
+pasar $X$ autos que llegan en aprox. $Z$ segundos, conviene estar en $\alpha$ fase''. Si ese
+dato viene de dos cruces atrás y lleva varios segundos viajando, su fuerza de onda
+es menor y el agente le da menos peso que al de su vecino inmediato.
 
-Hay tres niveles posibles de coordinación. Este proyecto implementara hasta el
-segundo:
+El proyecto se enfoca en un solo nivel de coordinación: \textbf{compartir colas,
+fase e intención}. Cada agente decide por su cuenta con esa información; no hay
+negociación entre agentes ni un controlador que los entrene en conjunto. Ese
+estado no se limita a los vecinos inmediatos: se propaga varios saltos como una
+onda causal difusa (sección~\ref{sec:onda}), con una fuerza que decae con la
+distancia y el tiempo.
 
-\begin{enumerate}
-  \item Compartir colas: solo la cola del vecino entra a la observación.
-  \item \textbf{Compartir colas, fase e intención} (objetivo del proyecto).
-  \item Negociación explícita con un crítico centralizado (MAPPO, QMIX). Queda como
-        trabajo futuro por el riesgo de no converger a tiempo.
-\end{enumerate}
+\subsection{Comunicación mínima entre intersecciones}
 
-\subsection{Comunicación mínima entre nodos}
-
-En el nodo real la información viajaria por radio LoRa (SX1276), con alcance de
-kilómetros y consumo despreciable. El mensaje cabe en 5 bytes
-(tabla~\ref{tab:mensaje}); a un mensaje por paso de decisión, cada nodo transmite
-1~byte por segundo por vecino. En la simulación la observación de vecinos se
-construye codificando y decodificando exactamente ese mensaje, así el agente ve
-los mismos valores cuantizados que llevaría el radio, con un paso de retraso.
+La comunicación es entre intersecciones (I2I). El mensaje de estado cabe en 6 bytes. 
+El disparador es el cambio de fase, cada vez que una
+intersección cambia de fase emite una onda, un mensaje por cada dirección de
+salida con la cola que descarga en esa dirección, y las demás intersecciones lo
+retransmiten mientras su fuerza de onda supere un umbral.
+En la simulación la observación se
+construirá codificando y decodificando exactamente esos mensajes, así el agente ve
+los mismos valores cuantizados que viajan en el mensaje, con el retraso que
+acumula cada salto.
 
 \begin{table}[!htbp]
 \centering\small
-\caption{Mensaje entre intersecciones vecinas.}
+\caption{Mensaje de estado que difunde cada intersección, uno por dirección de salida.}
 \label{tab:mensaje}
 \begin{tabular}{lll}
 \toprule
 Campo & Codificación & Bits\\
 \midrule
-Identificador del emisor & entero de 8 bits & 8\\
+Identificador de la intersección de origen & entero de 8 bits & 8\\
 Número de secuencia & entero de 8 bits & 8\\
-Cola hacia el receptor (vehículos, tope 255) & entero de 8 bits & 8\\
+Cola en la dirección del mensaje (vehículos, tope 255) & entero de 8 bits & 8\\
 Fase activa & índice de 2 bits & 2\\
 Fase prevista (intención) & índice de 2 bits & 2\\
-Tiempo en la fase (s, tope 63) & 6 bits & 6\\
 Demanda peatonal & 1 bit & 1\\
-Reservado & -- & 5\\
+Saltos acumulados $H$ (tope 15) & 4 bits & 4\\
+Tiempo acumulado en buffers $BT$ (s, tope 255) & entero de 8 bits & 8\\
+Reservado & -- & 7\\
 \midrule
-\textbf{Total} & & \textbf{40 bits = 5 bytes}\\
+\textbf{Total} & & \textbf{48 bits = 6 bytes}\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Nodo autónomo alimentado con energía solar}
+\subsection{Onda causal difusa entre intersecciones}
+\label{sec:onda}
 
-Cada intersección se concibe como un nodo sin dependencia eléctrica, panel
-fotovoltaico, controlador de carga MPPT, batería LiFePO4, sensado por radar de
-onda continua (sin obra en el pavimento) y el enlace LoRa
-(figura~\ref{fig:nodo}). El nodo sigue operando durante un apagón, y si se pierde
-el enlace con los vecinos, cada intersección sigue funcionando con su política
-local.
+Un vecino inmediato no es la única fuente útil ya que la cola que se forma dos o tres
+cruces aguas arriba también anuncia lo que va a llegar en un futuro no tan lejano, obviamente con
+algo de incertidumbre. 
+Para aprovecharla sin saturar el canal se propone adaptar la relación causal
+difusa~\cite{perez2014} y la \emph{fuerza de onda causal}. 
+La idea viene de las ondas
+capilares en \emph{"Indirect Fuzzy-Causal Communication Protocol for Vehicular 
+Ad Hoc Networks"} donde la información generada en una intersección se propaga por la red y
+pierde utilidad conforme recorre distancia y pasa el timepo. La fuerza de onda
+$\lambda(a,b) \in [0,1]$ mide cuánto afecta un evento $a$ a un evento $b$
+causalmente posterior ($a \rightarrow b$~\cite{lamport}): 0 es ningún efecto y 1
+el máximo.
+
+\paragraph{Qué se propone} En la tesis los RSU no se comunican
+directamente: los vehículos cargan los mensajes de un cruce al siguiente. 
+Así la información viaja a la velocidad del tráfico
+y llega junto con los carros que describe y, para un sistema de control de tráfico
+eso podría ser demasiado tarde para anticiparse (por ejemplo en
+sus simulaciones un mensaje tardó de 81 a 265~s en llegar a todos los RSU). Por eso
+aquí la comunicación seria I2I directa: cada intersección retransmite los
+mensajes de las demás a sus vecinas, salto por salto.
+
+\paragraph{Estimación de la fuerza de onda.} Cada mensaje acumula dos datos en su
+camino, el número de intersecciones que lo han retransmitido ($H$) y el tiempo
+acumulado en buffers desde su creación ($BT$). El receptor conoce además la
+distancia física al origen ($PD$), fija por la geometría de la red. Con esas tres
+variables, un sistema de inferencia Mamdani~\cite{mamdani} con funciones de
+membresía triangulares, 24 reglas y defuzzificación por promedio ponderado
+calcula $\lambda$, como en \emph{"Indirect Fuzzy-Causal Communication Protocol for Vehicular 
+Ad Hoc Networks"}.
+
+\paragraph{Difusión acotada.} Una intersección retransmite un mensaje solo si la
+fuerza de onda que estimó para sí misma supera un umbral $\varphi_s$; por debajo,
+la onda se extingue (figura~\ref{fig:onda}). Así el alcance de la información se
+ajusta a las condiciones del tráfico y la cantidad de mensajes que cada intersección
+retransmite queda acotada. Los duplicados se descartan por el par
+(origen, secuencia).
 
 \begin{figure}[!htbp]
 \centering
 \begin{tikzpicture}[
   font=\small,
-  caja/.style={draw=tintados, rounded corners=2pt, align=center, minimum height=9mm, inner sep=4pt, fill=white},
-  ctrl/.style={caja, draw=serieA, line width=0.9pt, fill=serieA!6},
-  flecha/.style={-{Stealth[length=2mm]}, tintados, line width=0.6pt},
-  energia/.style={-{Stealth[length=2mm]}, serieB, line width=0.9pt},
-  node distance=6mm and 9mm]
-  \node[ctrl, minimum width=40mm] (ctrl) {Controlador del cruce\\[1pt]\footnotesize agente DQN + máscara de seguridad};
-  \node[caja, left=of ctrl] (radar) {Radar de onda\\continua (accesos)};
-  \node[caja, right=of ctrl] (led) {Cabezas LED\\vehiculares y peatonales};
-  \node[caja, above=of ctrl] (lora) {Radio LoRa SX1276};
-  \node[caja, above left=6mm and 2mm of lora] (vecA) {Vecino anterior};
-  \node[caja, above right=6mm and 2mm of lora] (vecB) {Vecino siguiente};
-  \node[caja, below=11mm of ctrl, xshift=-30mm] (panel) {Panel FV\\600--800 Wp};
-  \node[caja, right=7mm of panel] (mppt) {MPPT\\24 V};
-  \node[caja, right=7mm of mppt] (bat) {Batería LiFePO4\\24 V};
-  \draw[flecha] (radar) -- node[above, font=\footnotesize]{colas} (ctrl);
-  \draw[flecha] (ctrl) -- node[above, font=\footnotesize]{fase} (led);
-  \draw[flecha, <->] (ctrl) -- (lora);
-  \draw[flecha, <->] (lora) -- node[left, font=\footnotesize, pos=0.4]{5 B} (vecA);
-  \draw[flecha, <->] (lora) -- node[right, font=\footnotesize, pos=0.4]{5 B} (vecB);
-  \draw[energia] (panel) -- (mppt);
-  \draw[energia] (mppt) -- (bat);
-  \draw[energia] (bat.north) |- ([yshift=-4mm]ctrl.south) -- (ctrl.south);
+  cruce/.style={circle, draw=tintados, minimum size=10mm, inner sep=0pt, font=\bfseries},
+  salto/.style={-{Stealth[length=2mm]}, tintados, line width=0.6pt},
+  node distance=17mm]
+  \node[cruce, fill=serieA!100, text=white] (A) {A};
+  \node[cruce, fill=serieA!80, text=white, right=of A] (B) {B};
+  \node[cruce, fill=serieA!55, right=of B] (C) {C};
+  \node[cruce, fill=serieA!30, right=of C] (D) {D};
+  \node[cruce, fill=white, draw=linea, text=linea, right=of D] (E) {E};
+  \foreach \r in {6.5mm,8.5mm,10.5mm}
+    \draw[serieA!60, line width=0.7pt] ([xshift=-1mm]A.center) ++(-40:\r) arc (-40:40:\r);
+  \draw[salto] (A) -- node[above, pos=0.6, font=\footnotesize]{I2I} (B);
+  \draw[salto] (B) -- node[above, pos=0.6, font=\footnotesize]{I2I} (C);
+  \draw[salto] (C) -- node[above, pos=0.6, font=\footnotesize]{I2I} (D);
+  \draw[salto, linea, dashed] (D) -- (E);
+  \node[below=2mm of A, align=center, font=\footnotesize] {origen\\$H=0$};
+  \node[below=2mm of B, align=center, font=\footnotesize] {$\lambda=0.82$\\$H=1$};
+  \node[below=2mm of C, align=center, font=\footnotesize] {$\lambda=0.57$\\$H=2$};
+  \node[below=2mm of D, align=center, font=\footnotesize] {$\lambda=0.31<\varphi_s$\\no retransmite};
+  \node[below=2mm of E, align=center, font=\footnotesize, text=tintados] {no lo\\recibe};
 \end{tikzpicture}
-\caption{Arquitectura propuesta del nodo de una intersección. En naranja, el flujo
-de energía; en gris, información. El mensaje con cada vecino mide 5 bytes.}
-\label{fig:nodo}
+\caption{Difusión de la onda que emite A al cambiar de fase, con
+$\varphi_s=0.4$ (valores ilustrativos). Cada salto incrementa $H$ y suma tiempo a
+$BT$. D todavía usa el mensaje, con poco peso, pero estima una fuerza menor que el
+umbral y ya no lo retransmite, así que E no lo recibe.}
+\label{fig:onda}
 \end{figure}
 
-IMPORTANTE: En el proyecto no se piensa implementar HW, solo se realizara la simulacion.
+\paragraph{Orden de los mensajes.} Los mensajes de estado (cola, fase, intención) son
+instantáneas tomadas en cada cambio de fase, es decir, de cada origen solo importa la más reciente, y basta el número de
+secuencia para descartar las viejas.
+
+\paragraph{Qué ve el agente.} La observación mantiene su forma fija. Cada espacio
+de vecino agrega la fuerza de onda de su último mensaje, y se suma un bloque de
+campo lejano por aproximación: la cola de las intersecciones aguas arriba
+ponderada por su fuerza de onda ($\sum_i \lambda_i q_i / \sum_i \lambda_i$) y la
+fuerza máxima recibida. El sistema difuso estima cuánto vale cada dato; el DQN
+aprende qué hacer con él. Con mensajes crudos, un dato viejo se ve igual que uno
+fresco; con la fuerza de onda, el agente puede aprender a descontarlo, lo que
+importa sobre todo cuando el enlace falla a medias.
+
 
 \subsection{Seguridad fuera del agente}
 
@@ -253,27 +305,14 @@ $\alpha$ y $\gamma$, y luego se agregarian $\beta$ y $\delta$.
 % ------------------------------------------------------------------ 4
 \section{Alcance}
 
-\begin{table}[!htbp]
-\centering\small
-\caption{Qué entra y qué no entra en el proyecto.}
-\begin{tabularx}{\linewidth}{@{}L L@{}}
-\toprule
-\textbf{Dentro del alcance} & \textbf{Fuera del alcance, y por qué}\\
-\midrule
-Simulación en SUMO de la red real alrededor de CU~BUAP, con sus semáforos reales. &
-Construcción de hardware: solo dimensionamiento y cotizaciones reales.\\
-Cinco controladores comparados (sección~\ref{sec:eval}) en cuatro escenarios. &
-Un modelo de lenguaje como controlador: un modelo de 7B consume 10--15 W
-sostenidos, lo mismo que el propio semáforo.\\
-Coordinación de nivel 2: colas, fase e intención de los vecinos. &
-Aprendizaje multiagente con crítico centralizado (MAPPO, QMIX): trabajo futuro.\\
-Métricas de tráfico, energía, emisiones y peatones contra tiempo fijo. &
-Despliegue en vía pública.\\
-Dimensionamiento del nodo solar con irradiancia de PVGIS. &
-Calibración con aforos vehiculares reales, salvo que se consigan a tiempo.\\
-\bottomrule
-\end{tabularx}
-\end{table}
+El proyecto se desarrolla por completo en simulación. Comprende la red vial real
+alrededor de CU~BUAP en SUMO, con sus semáforos reales, y la comparación de cuatro
+controladores (sección~\ref{sec:eval}) en tres escenarios. La coordinación entre
+intersecciones se basa en compartir cola, fase e intención, que se difunden
+varios saltos como una onda causal difusa: la fuerza de onda se estima con el
+sistema difuso de Evropeytsev~\cite{evropeytsev2020}. Todos los controladores se evalúan contra tiempo fijo
+con métricas de tráfico, energía, emisiones y peatones, sobre una red que
+cualquier integrante reconstruye igual en su máquina.
 
 % ------------------------------------------------------------------ 5
 \section{Zona de estudio y datos usados hasta ahora}
@@ -283,7 +322,9 @@ Calibración con aforos vehiculares reales, salvo que se consigan a tiempo.\\
 Se propone la periferia de Ciudad Universitaria de la BUAP un anillo formado por el
 Blvd.\ Valsequillo, la Av.\ San Claudio, la 24 Sur y el Blvd.\ Municipio Libre,
 con intersecciones semaforizadas consecutivas y flujo alto en horas pico (experiencia
-propia), creo que es una muestra representativa pero se pueden proponer alternativas. 
+propia), ya que se considera representativa del flujo vehicular en la zona y 
+es propensa a tener congestión en horas pico asi como ciclos de semáforo no
+optimos (según observaciones propias).
 
 El área descargada de OpenStreetMap mide $2.14 \times 3.52$~km (7.5~km\textsuperscript{2});
 la red simulada suma unos 262~km de calle vehicular, 2{,}187 cruces y 2{,}653 cruces
@@ -299,9 +340,10 @@ completas las calles que cruzan el borde.}
 \label{fig:area}
 \end{figure}
 
+\needspace{0.3\textheight}
 \subsection{Datos}
 
-\begin{table}[!htbp]
+\begin{table}[H]
 \centering\small
 \caption{Fuentes de datos del proyecto.}
 \label{tab:datos}
@@ -313,7 +355,6 @@ OpenStreetMap~\cite{osm} & Red vial: calles, carriles, sentidos, vueltas. Extrac
 Inventario de Semáforos SEMOVINFRA 2021~\cite{inventario} & Ubicación de los semáforos reales. 3{,}283 postes en la ciudad, 156 en el área. & En uso\\
 Inventario SEMOVINFRA, tabla 2020~\cite{inventario} & Comparación entre levantamientos (3{,}054 postes). & Guardado\\
 Modelos de emisión y energía de SUMO~\cite{sumoemisiones,kurczveil} & Consumo y emisiones por vehículo. & Integrado en SUMO\\
-PVGIS~\cite{pvgis} & Irradiancia para dimensionar el nodo solar. & Pendiente\\
 Aforos vehiculares & Calibrar la demanda de hora pico. & Por conseguir\\
 \bottomrule
 \end{tabularx}
@@ -393,10 +434,9 @@ figura~\ref{fig:sumo} muestra la red cargada en el simulador.
 \# & Controlador & Papel\\
 \midrule
 1 & Tiempo fijo & Línea base obligatoria: cómo operan hoy los semáforos. Planes calculados con el método de Webster~\cite{webster}.\\
-2 & Max-pressure~\cite{maxpressure} & Regla sin aprendizaje con garantías de estabilidad. Es el plan~B si el DQN no converge a tiempo.\\
-3 & DQN sin vecinos & Mismo agente, solo con observación local. Aísla cuánto aporta la coordinación.\\
-4 & DQN con vecinos & El controlador principal.\\
-5 & Jev (TypeSafe AI) & Opcional, sujeto a acceso a la API. Decisiones tipadas con nivel de confianza; cae a max-pressure si la confianza es baja.\\
+2 & DQN sin vecinos & Mismo agente, solo con observación local. Aísla cuánto aporta la coordinación.\\
+3 & DQN con vecinos directos & Mensaje crudo de los vecinos inmediatos, sin fuerza de onda.\\
+4 & DQN con onda causal difusa & El controlador principal: información de varios saltos ponderada por su fuerza de onda.\\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -404,9 +444,10 @@ figura~\ref{fig:sumo} muestra la red cargada en el simulador.
 Los agentes DQN~\cite{dqn} se entrenan de forma independiente, uno por intersección
 (\emph{Independent Q-Learning}~\cite{tan}), con Stable-Baselines3~\cite{sb3} sobre
 un entorno Gymnasium construido a partir de sumo-rl~\cite{sumorl} y SUMO~\cite{sumo}.
-\textbf{La comparación entre el controlador~3 y el~4 es el resultado más
-importante}: mismo agente y mismo código, con el bloque de vecinos encendido o
-apagado.
+\textbf{Las comparaciones 2 contra 3 y 3 contra 4 son los resultados más
+importantes}: mismo agente y mismo código. La primera aísla cuánto aporta la
+coordinación; la segunda, cuánto aporta la onda causal difusa sobre el mensaje
+crudo.
 
 \subsection{Métricas}
 
@@ -425,7 +466,6 @@ Tráfico & Tiempo de espera medio, paradas por vehículo, longitud de cola.\\
 Coordinación & Paradas en el corredor completo, tiempo de viaje de extremo a extremo.\\
 Energía & kWh consumidos en el corredor, CO$_2$ evitado.\\
 Peatones & Tiempo de espera peatonal, cruces con verde suficiente.\\
-Económica & Costo por intersección, retorno frente a la acometida eléctrica.\\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -435,8 +475,8 @@ Económica & Costo por intersección, retorno frente a la acometida eléctrica.\
 \begin{enumerate}
   \item Tráfico típico de hora pico.
   \item Tráfico asimétrico, con un sentido dominante: donde la coordinación debería rendir más.
-  \item Pérdida del enlace con los vecinos: observaciones de vecinos en cero.
-  \item Incidente: un carril bloqueado en una intersección intermedia.
+  \item Pérdida del enlace con los vecinos: total (observaciones de vecinos en cero)
+        y parcial (mensajes perdidos o retrasados en la onda).
 \end{enumerate}
 
 % ------------------------------------------------------------------ 7
@@ -446,18 +486,21 @@ No tenemos resultados todavía. Estas son las hipótesis que el proyecto pone a
 prueba; cualquiera puede resultar falsa, y en ese caso se reporta como tal.
 
 \begin{enumerate}[label=\textbf{H\arabic*.}]
-  \item Max-pressure reduce la espera media frente a tiempo fijo en hora pico.
+  \item El DQN sin vecinos reduce la espera media frente a tiempo fijo en hora pico.
   \item El DQN con vecinos reduce las paradas en el corredor y el tiempo de viaje de
         extremo a extremo frente al DQN sin vecinos, sobre todo con tráfico asimétrico.
   \item Al perder el enlace, el DQN con vecinos se degrada hacia el desempeño del DQN
         local, sin dejar de operar.
+  \item La onda causal difusa reduce las paradas y el tiempo de viaje frente a los
+        vecinos directos, sobre todo con pérdida parcial de mensajes,
+        porque la fuerza de onda le indica al agente cuánto confiar en información
+        lejana o vieja.
   \item Menos paradas y arranques se traducen en menos energía y emisiones por
         vehículo-kilómetro en el corredor.
 \end{enumerate}
 
 Entregables: la simulación reproducible, las comparaciones con sus figuras, el
-estudio de ablación de la recompensa, el dimensionamiento y costeo del nodo solar,
-y los documentos del concurso (ficha técnica, memoria de cálculo y presentación).
+estudio de ablación de la recompensa y los documentos del concurso (ficha técnica, memoria de cálculo y presentación).
 
 
 
@@ -474,9 +517,6 @@ Transportation Systems (ITSC)}, 2018, pp.~2575--2582.
 Y.~Zhu, K.~Xu y Z.~Li. CoLight: Learning network-level cooperation for traffic
 signal control. \emph{Proceedings of the 28th ACM International Conference on
 Information and Knowledge Management (CIKM)}, 2019, pp.~1913--1922.
-
-\bibitem{maxpressure} P.~Varaiya. Max pressure control of a network of signalized
-intersections. \emph{Transportation Research Part~C}, 36:177--195, 2013.
 
 \bibitem{dqn} V.~Mnih et al. Human-level control through deep reinforcement
 learning. \emph{Nature}, 518:529--533, 2015.
@@ -511,8 +551,26 @@ Consultado el 26/09/2026.
 \bibitem{osm} Personas contribuyentes de OpenStreetMap. Datos bajo licencia ODbL.
 \url{https://www.openstreetmap.org}. Extracto descargado el 26/09/2026.
 
-\bibitem{pvgis} Comisión Europea, Joint Research Centre. Photovoltaic Geographical
-Information System (PVGIS). \url{https://re.jrc.ec.europa.eu/pvg_tools/}
+
+\bibitem{evropeytsev2020} G.~Evropeytsev. \emph{Indirect Fuzzy-Causal Communication
+Protocol for Vehicular Ad Hoc Networks}. Tesis doctoral, Instituto Nacional de
+Astrofísica, Óptica y Electrónica (INAOE), Tonantzintla, Puebla, 2020.
+
+\bibitem{evropeytsev2019} G.~Evropeytsev, S.~E. Pomares Hernández, J.~R. Pérez Cruz,
+L.~M. Rodríguez Henríquez y E.~López Domínguez. A scalable indirect
+position-based causal diffusion protocol for vehicular networks. \emph{IEEE
+Access}, 7:14767--14778, 2019.
+
+\bibitem{perez2014} J.~R. Pérez Cruz y S.~E. Pomares Hernández. Temporal alignment
+model for data streams in wireless sensor networks based on causal dependencies.
+\emph{International Journal of Distributed Sensor Networks}, 2014.
+
+\bibitem{lamport} L.~Lamport. Time, clocks, and the ordering of events in a
+distributed system. \emph{Communications of the ACM}, 21(7):558--565, 1978.
+
+\bibitem{mamdani} E.~H. Mamdani y S.~Assilian. An experiment in linguistic synthesis
+with a fuzzy logic controller. \emph{International Journal of Man-Machine
+Studies}, 7(1):1--13, 1975.
 \end{thebibliography}
 
 \end{document}
