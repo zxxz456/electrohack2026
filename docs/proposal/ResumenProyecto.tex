@@ -18,6 +18,7 @@
 % Historial:
 % ------------
 % Autor       Fecha           Descripción
+% zxxz6       02/10/2026      Sin referencias de Lamport y Mamdani
 % zxxz6       01/10/2026      Update con propuesta basada en tesis que compartio 
 %                             el Dr. Pomares
 % zxxz6       25/09/2026      Creación
@@ -190,7 +191,7 @@ capilares en \emph{"Indirect Fuzzy-Causal Communication Protocol for Vehicular
 Ad Hoc Networks"} donde la información generada en una intersección se propaga por la red y
 pierde utilidad conforme recorre distancia y pasa el timepo. La fuerza de onda
 $\lambda(a,b) \in [0,1]$ mide cuánto afecta un evento $a$ a un evento $b$
-causalmente posterior ($a \rightarrow b$~\cite{lamport}): 0 es ningún efecto y 1
+causalmente posterior ($a \rightarrow b$): 0 es ningún efecto y 1
 el máximo.
 
 \paragraph{Qué se propone} En la tesis los RSU no se comunican
@@ -206,7 +207,7 @@ mensajes de las demás a sus vecinas, salto por salto.
 camino, el número de intersecciones que lo han retransmitido ($H$) y el tiempo
 acumulado en buffers desde su creación ($BT$). El receptor conoce además la
 distancia física al origen ($PD$), fija por la geometría de la red. Con esas tres
-variables, un sistema de inferencia Mamdani~\cite{mamdani} con funciones de
+variables, un sistema de inferencia Mamdani con funciones de
 membresía triangulares, 24 reglas y defuzzificación por promedio ponderado
 calcula $\lambda$, como en \emph{"Indirect Fuzzy-Causal Communication Protocol for Vehicular 
 Ad Hoc Networks"}.
@@ -564,13 +565,6 @@ Access}, 7:14767--14778, 2019.
 \bibitem{perez2014} J.~R. Pérez Cruz y S.~E. Pomares Hernández. Temporal alignment
 model for data streams in wireless sensor networks based on causal dependencies.
 \emph{International Journal of Distributed Sensor Networks}, 2014.
-
-\bibitem{lamport} L.~Lamport. Time, clocks, and the ordering of events in a
-distributed system. \emph{Communications of the ACM}, 21(7):558--565, 1978.
-
-\bibitem{mamdani} E.~H. Mamdani y S.~Assilian. An experiment in linguistic synthesis
-with a fuzzy logic controller. \emph{International Journal of Man-Machine
-Studies}, 7(1):1--13, 1975.
 \end{thebibliography}
 
 \end{document}
