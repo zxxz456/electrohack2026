@@ -12,9 +12,8 @@
 # ------------
 # - networks/*/generated/ se ignora: lo reconstruyen los scripts de red
 #   y de demanda a partir de entradas versionadas
-# - data/ conserva entradas crudas pequeñas (cotizaciones, CSV de
-#   irradiancia); los extractos grandes de OSM se ignoran y se vuelven a
-#   descargar
+# - data/ conserva entradas crudas pequeñas (inventario de semáforos);
+#   los extractos grandes de OSM se ignoran y se vuelven a descargar
 # - Los auxiliares de LaTeX se ignoran solo dentro de docs/, para que
 #   patrones como *.log o *.out no escondan otros archivos del repo
 #
@@ -28,6 +27,7 @@
 # Historial:
 # ------------
 # Autor       Fecha           Descripción
+# zxxz6       01/10/2026      Comentario de data/ sin datos solares
 # zxxz6       27/09/2026      Auxiliares de compilación de LaTeX en docs/
 # zxxz6       25/09/2026      Traducido al español
 # zxxz6       25/09/2026      Eliminadas las secciones License y Warning

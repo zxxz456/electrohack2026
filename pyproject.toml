@@ -33,6 +33,7 @@
 # Historial:
 # ------------
 # Autor       Fecha           Descripción
+# zxxz6       01/10/2026      Sin dependencias de dimensionamiento solar
 # zxxz6       26/09/2026      SUMO fijo en 1.27.1, pyproj, pytest y ruff
 # zxxz6       25/09/2026      torch con CUDA 12.8 en lugar de CPU
 # zxxz6       25/09/2026      Traducido al español
@@ -48,7 +49,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "corridor"
 version = "0.1.0"
-description = "Control de semáforos con RL y vecinos para un corredor solar"
+description = "Control de semáforos con RL y vecinos para un corredor urbano"
 requires-python = ">=3.10"
 dependencies = [
     "eclipse-sumo==1.27.1",
@@ -60,7 +61,6 @@ dependencies = [
     "pandas>=2.1",
     "pyyaml>=6.0",
     "matplotlib>=3.8",
-    "requests>=2.31",
     "sumolib==1.27.1",
     "pyproj>=3.6",
 ]
