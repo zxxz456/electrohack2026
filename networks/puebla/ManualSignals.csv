@@ -1,0 +1,7 @@
+node_id,tl_id,crossing,note
+411859793,,BOULEVARD VALSEQUILLO x UNIVERSIDAD AUTONOMA DE PUEBLA (calzada poniente),observado en campo; no esta en el inventario 2021
+valsequillo_uap_oriente,,BOULEVARD VALSEQUILLO x UNIVERSIDAD AUTONOMA DE PUEBLA (calzada oriente),observado en campo; nodo creado por ManualEdges.edg.xml
+6075296974,,BOULEVARD VALSEQUILLO x 63 F ORIENTE (calzada oriente),observado en campo; calzada opuesta al semaforo 6075296973 del inventario
+cluster_411226925_411405439,san_claudio_24_sur,24 SUR x SAN CLAUDIO (cruce principal),observado en campo; el inventario solo semaforiza 8431668234; cruces peatonales sin semaforo peatonal
+8431668234,san_claudio_24_sur,24 SUR x SAN CLAUDIO (sentido norte),semaforo del inventario; se une al programa del cruce principal porque estan a 0.2 m
+10054805230,,AVENIDA SAN CLAUDIO cruce peatonal a media cuadra (calzada central),observado en campo; semaforo peatonal y vehicular en ambos sentidos

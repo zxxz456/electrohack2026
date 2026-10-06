@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ManualEdges.edg.xml
+========================
+
+
+Descripción:
+============
+Tramos que OpenStreetMap no tiene y que se observaron en campo.
+BuildNetwork.sh los aplica en la segunda pasada de netconvert, sobre la
+red ya construida desde OSM.
+
+
+Consideraciones:
+============
+- Valsequillo y Universidad Autónoma de Puebla: el semáforo y el cruce
+  peatonal abarcan las dos calzadas, pero en OSM la calzada oriente no
+  tiene nodo en ese punto. Se parte el tramo 871402787#1 a 195.17 m de
+  su inicio (coordenada 2596.43, 2205.36 de la red) para crear el nodo
+  valsequillo_uap_oriente
+- La parte pegada al semáforo de Chapingo conserva el nombre
+  871402787#1, para que las conexiones y el cruce de ese nodo no cambien
+- El andador cruza el camellón entre las dos calzadas. Sin él, un cruce
+  sobre una sola calzada no tiene a dónde llegar, porque netconvert solo
+  pone banqueta del lado derecho de cada calzada
+- La posición del corte depende de la geometría de OSM; si cambia el
+  extracto, hay que recalcularla
+
+
+Metadatos:
+==========
+* Autor: zxxz6 (Bryan Violante Arriaga)
+* Versión: 1.0.0
+
+
+Historial:
+============
+Autor       Fecha           Descripción
+zxxz6       05/10/2026      Creación
+
+
+-->
+<edges>
+    <edge id="871402787#1">
+        <split
+            pos="195.17"
+            id="valsequillo_uap_oriente"
+            idBefore="871402787#1a"
+            idAfter="871402787#1"/>
+    </edge>
+    <edge
+        id="andador_valsequillo_uap"
+        from="411859793"
+        to="valsequillo_uap_oriente"
+        allow="pedestrian"
+        numLanes="1"
+        speed="2.78"
+        width="2.00"/>
+</edges>
+<!--
+########################## FIN DE MANUALEDGES.EDG.XML ##########################
+################################################################################
+-->

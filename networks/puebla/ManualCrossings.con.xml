@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ManualCrossings.con.xml
+========================
+
+
+Descripción:
+============
+Cruces peatonales que OpenStreetMap no tiene y que se observaron en
+campo. BuildNetwork.sh los aplica en la segunda pasada de netconvert,
+junto con ManualEdges.edg.xml.
+
+
+Consideraciones:
+============
+- Valsequillo y Universidad Autónoma de Puebla: un cruce sobre cada
+  calzada, unidos por el andador del camellón
+- Valsequillo y 63 F Oriente, calzada oriente: el semáforo se declara en
+  la segunda pasada, donde netconvert ya no adivina cruces, así que el
+  cruce se declara aquí. Llega al andador que OSM ya tiene en el camellón
+- El cruce del semáforo de Chapingo (5120969388) ya existía, pero al
+  partir la calzada oriente netconvert lo pierde. Declararlo aquí lo
+  reconstruye; netconvert avisa que descarta el original y conserva
+  este
+- 24 Sur y San Claudio: la rama norte (Río Papagayo) no tenía cruce.
+  En nodos sin semáforo netconvert no adivina cruces sobre tramos de
+  más de 13.89 m/s, Río Papagayo tiene 27.78 m/s, y este nodo se
+  semaforiza hasta la segunda pasada
+- El cruce de 8431668234 trae del programa anterior el índice de enlace
+  4, que en el semáforo conjunto san_claudio_24_sur choca con un
+  movimiento vehicular. Se descarta y se declara de nuevo para que
+  netconvert le asigne un índice propio
+- Cada cruce se define por el nodo y el tramo que atraviesa
+
+
+Metadatos:
+==========
+* Autor: zxxz6 (Bryan Violante Arriaga)
+* Versión: 1.0.0
+
+
+Historial:
+============
+Autor       Fecha           Descripción
+zxxz6       05/10/2026      Cruces de 24 Sur y San Claudio
+zxxz6       05/10/2026      Creación
+
+
+-->
+<connections>
+    <crossing
+        node="valsequillo_uap_oriente"
+        edges="871402787#1"
+        priority="true"/>
+    <crossing
+        node="411859793"
+        edges="97518879#19"
+        priority="true"/>
+    <crossing
+        node="6075296974"
+        edges="871403745#2"
+        priority="true"/>
+    <crossing
+        node="5120969388"
+        edges="871402787#1"
+        priority="true"/>
+    <crossing
+        node="cluster_411226925_411405439"
+        edges="939430107 939430106"
+        priority="true"/>
+    <crossing
+        node="8431668234"
+        edges="812611392#9"
+        discard="true"/>
+    <crossing
+        node="8431668234"
+        edges="812611392#9"
+        priority="true"/>
+</connections>
+<!--
+######################## FIN DE MANUALCROSSINGS.CON.XML ########################
+################################################################################
+-->

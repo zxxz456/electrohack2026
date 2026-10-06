@@ -24,8 +24,21 @@
 # - Las filas already_in_osm no se pasan: esos cruces ya son semáforo, y
 #   declararlos otra vez parte los semáforos conjuntos de OSM (varios
 #   nodos, un programa) en semáforos independientes y desincronizados
+# - Segunda pasada opcional con las correcciones de campo que OSM no
+#   trae: ManualEdges.edg.xml (tramos), ManualCrossings.con.xml (cruces)
+#   y ManualSignals.csv (semáforos). Se aplica sobre la red de la primera
+#   pasada y reconstruye todos los programas de semáforo, para que los
+#   cruces nuevos queden dentro del ciclo
+# - En ManualSignals.csv, las filas con tl_id vacío se declaran con
+#   --tls.set, cada una con su propio programa. Las filas que comparten
+#   tl_id forman un solo semáforo conjunto (varios nodos, un programa):
+#   se escriben como parche de nodos en generated/ManualSignals.nod.xml,
+#   porque tls.join no actúa en la segunda pasada. El nodo creado por un
+#   split de ManualEdges.edg.xml no puede ir en un semáforo conjunto:
+#   netconvert lee los nodos antes que los tramos
 # - Al final verifica que la red tenga todos los semáforos de
-#   Signals.csv; netconvert solo advierte si un nodo no existe
+#   Signals.csv y ManualSignals.csv; netconvert solo advierte si un nodo
+#   no existe
 #
 #
 # Metadatos:
@@ -37,6 +50,8 @@
 # Historial:
 # ------------
 # Autor       Fecha           Descripción
+# zxxz6       05/10/2026      Semáforos conjuntos desde ManualSignals.csv
+# zxxz6       05/10/2026      Segunda pasada con correcciones de campo
 # zxxz6       26/09/2026      Semáforos del inventario y verificación final
 # zxxz6       26/09/2026      Creación
 #
@@ -68,8 +83,42 @@ if [[ -f Signals.csv ]]; then
     fi
 fi
 
+NET_FILE="generated/Corridor.net.xml.gz"
+BASE_FILE="generated/Base.net.xml.gz"
+
+PATCH_ARGS=()
+[[ -f ManualEdges.edg.xml ]] && PATCH_ARGS+=(--edge-files ManualEdges.edg.xml)
+[[ -f ManualCrossings.con.xml ]] && \
+    PATCH_ARGS+=(--connection-files ManualCrossings.con.xml)
+if [[ -f ManualSignals.csv ]]; then
+    MANUAL_NODES="$(awk -F, 'NR > 1 && $1 != "" && $2 == "" \
+        { print $1 }' ManualSignals.csv | paste -sd, -)"
+    if [[ -n "$MANUAL_NODES" ]]; then
+        PATCH_ARGS+=(--tls.set "$MANUAL_NODES")
+        COUNT="$(tr ',' '\n' <<< "$MANUAL_NODES" | wc -l)"
+        echo "Semáforos declarados desde ManualSignals.csv: $COUNT"
+    fi
+    JOINED_NODES="$(awk -F, 'NR > 1 && $1 != "" && $2 != "" \
+        { printf "    <node id=\"%s\" type=\"traffic_light\" tl=\"%s\"/>\n", \
+          $1, $2 }' ManualSignals.csv)"
+    if [[ -n "$JOINED_NODES" ]]; then
+        printf '<nodes>\n%s\n</nodes>\n' "$JOINED_NODES" \
+            > generated/ManualSignals.nod.xml
+        PATCH_ARGS+=(--node-files generated/ManualSignals.nod.xml)
+        COUNT="$(wc -l <<< "$JOINED_NODES")"
+        echo "Nodos en semáforos conjuntos de ManualSignals.csv: $COUNT"
+    fi
+fi
+
 echo "Construyendo la red de $CORRIDOR con netconvert..."
-netconvert -c Corridor.netccfg "${TLS_ARGS[@]}"
+if [[ ${#PATCH_ARGS[@]} -eq 0 ]]; then
+    netconvert -c Corridor.netccfg "${TLS_ARGS[@]}" -o "$NET_FILE"
+else
+    netconvert -c Corridor.netccfg "${TLS_ARGS[@]}" -o "$BASE_FILE"
+    echo "Aplicando correcciones de campo (segunda pasada)..."
+    netconvert -s "$BASE_FILE" "${PATCH_ARGS[@]}" --tls.rebuild \
+        -o "$NET_FILE"
+fi
 
 echo "Extrayendo polígonos con polyconvert..."
 polyconvert -c Corridor.polycfg
