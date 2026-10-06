@@ -32,6 +32,7 @@ Metadatos:
 Historial:
 ------------
 Autor       Fecha           Descripción
+zxxz6       05/10/2026      Mensaje de verificación con ManualSignals.csv
 zxxz6       26/09/2026      Opción --check para verificar la red
 zxxz6       26/09/2026      Creación
 
@@ -87,13 +88,17 @@ def main():
         missing = missing_signals(args.corridor)
         if missing:
             print(
-                f"ERROR: {len(missing)} nodos de Signals.csv no tienen "
-                "semáforo en la red. Revisa que SUMO sea la versión fijada "
+                f"ERROR: {len(missing)} nodos de Signals.csv o "
+                "ManualSignals.csv no tienen semáforo en la red. Revisa "
+                "que SUMO sea la versión fijada "
                 "en pyproject.toml: " + ", ".join(missing),
                 file=sys.stderr,
             )
             sys.exit(1)
-        print("Verificación: todos los semáforos de Signals.csv están.")
+        print(
+            "Verificación: todos los semáforos de Signals.csv y "
+            "ManualSignals.csv están."
+        )
         return
 
     matches = match_inventory(args.corridor, args.inventory)

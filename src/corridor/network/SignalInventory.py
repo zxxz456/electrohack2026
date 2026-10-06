@@ -42,6 +42,7 @@ Metadatos:
 Historial:
 ------------
 Autor       Fecha           Descripción
+zxxz6       05/10/2026      Verificación incluye ManualSignals.csv
 zxxz6       26/09/2026      Red base, verificación y cruces fuera del área
 zxxz6       26/09/2026      Creación
 
@@ -61,6 +62,7 @@ from corridor.network.Utils import (
     BASE_NET_FILE_NAME,
     CORRIDOR_BBOX,
     IGNORED_NODE_TYPES,
+    MANUAL_SIGNALS_FILE_NAME,
     MATCH_RADIUS_M,
     MIN_APPROACH_STREETS,
     NET_FILE_NAME,
@@ -545,8 +547,9 @@ def write_signals(matches, path):
 
 def missing_signals(corridor):
     """
-    Lista los nodos de Signals.csv que no quedaron semaforizados en la
-    red construida. netconvert solo advierte cuando tls.set nombra un
+    Lista los nodos de Signals.csv y de ManualSignals.csv que no
+    quedaron semaforizados en la red construida. netconvert solo
+    advierte cuando tls.set nombra un
     nodo que no existe, así que sin esta verificación una versión
     distinta de SUMO podría perder semáforos sin que nadie lo note.
 
@@ -569,6 +572,9 @@ def missing_signals(corridor):
         if junction.has_signal
     }
     expected = read_signal_node_ids(directory / SIGNALS_FILE_NAME)
+    manual_path = directory / MANUAL_SIGNALS_FILE_NAME
+    if manual_path.is_file():
+        expected += read_signal_node_ids(manual_path)
     return [node_id for node_id in expected if node_id not in signalized]
 
 

@@ -32,6 +32,7 @@ Metadatos:
 Historial:
 ------------
 Autor       Fecha           Descripción
+zxxz6       05/10/2026      Nombre de ManualSignals.csv
 zxxz6       26/09/2026      Red base, cruces fuera del área, inside_area
 zxxz6       26/09/2026      Creación
 
@@ -52,6 +53,7 @@ NETCCFG_FILE_NAME = "Corridor.netccfg"
 NET_FILE_NAME = "generated/Corridor.net.xml.gz"
 BASE_NET_FILE_NAME = "Base.net.xml.gz"
 SIGNALS_FILE_NAME = "Signals.csv"
+MANUAL_SIGNALS_FILE_NAME = "ManualSignals.csv"
 
 DEFAULT_CORRIDOR = "puebla"
 
