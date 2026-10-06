@@ -20,6 +20,17 @@ Consideraciones:
 - OSM casi no tiene semáforos mapeados en Puebla. Los que faltan salen
   del inventario municipal (Signals.csv) y BuildNetwork.sh los pasa con
   tls.set; por eso esta configuración sola no los incluye
+- Las banquetas se adivinan por velocidad. Con el límite por defecto
+  (13.89 m/s, 50 km/h) las avenidas rápidas como Valsequillo y San
+  Claudio quedaban sin banqueta y, sin banqueta, sin cruce peatonal:
+  solo 20 de 45 nodos con semáforo tenían cruce. Con 30 m/s todos los
+  cruces semaforizados tienen paso peatonal, como en la realidad
+- Correcciones observadas en campo que OSM trae mal: en Valsequillo y
+  Universidad Autónoma de Sonora el camellón es continuo, pero OSM tiene
+  un tramo que lo atraviesa. Se excluye esa intersección de la unión de
+  nodos y se quita el tramo (35107793#0 y su sentido contrario)
+- Los semáforos, cruces y tramos que OSM no tiene van en los archivos
+  Manual*, que BuildNetwork.sh aplica en una segunda pasada
 - Se ejecuta desde scripts/BuildNetwork.sh, que exige SUMO_HOME
 
 
@@ -32,6 +43,8 @@ Metadatos:
 Historial:
 ============
 Autor       Fecha           Descripción
+zxxz6       05/10/2026      Camellón continuo en Valsequillo y Sonora
+zxxz6       05/10/2026      Banquetas en avenidas: cruces en todo semáforo
 zxxz6       26/09/2026      Semáforos del inventario vía Signals.csv
 zxxz6       26/09/2026      Creación
 
@@ -54,6 +67,10 @@ zxxz6       26/09/2026      Creación
         <geometry.remove value="true"/>
     </processing>
 
+    <edge_removal>
+        <remove-edges.explicit value="35107793#0,-35107793#0"/>
+    </edge_removal>
+
     <tls_building>
         <tls.discard-simple value="true"/>
         <tls.join value="true"/>
@@ -67,10 +84,12 @@ zxxz6       26/09/2026      Creación
 
     <junctions>
         <junctions.join value="true"/>
+        <junctions.join-exclude value="411862913,8116703562"/>
     </junctions>
 
     <pedestrian>
         <sidewalks.guess value="true"/>
+        <sidewalks.guess.max-speed value="30"/>
         <crossings.guess value="true"/>
     </pedestrian>
 
