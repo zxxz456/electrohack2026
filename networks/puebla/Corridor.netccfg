@@ -29,6 +29,20 @@ Consideraciones:
   Universidad Autónoma de Sonora el camellón es continuo, pero OSM tiene
   un tramo que lo atraviesa. Se excluye esa intersección de la unión de
   nodos y se quita el tramo (35107793#0 y su sentido contrario)
+- Sin vueltas en U, salvo en calles sin salida. netconvert las permite
+  por defecto en casi todo cruce, y las rutas que las usan bloquean el
+  carril izquierdo de San Claudio frente a 14 Sur y 18 Sur hasta trabar
+  la red. Un retorno real se agregaría como corrección de campo
+- 14 Sur y Circunvalación: tls.join une sus cuatro semáforos en un
+  programa que da verde a un acceso a la vez, con ciclo de 222 s (cada
+  acceso en verde el 14% del tiempo). Con eso el distribuidor se traba
+  y la cola llega a San Claudio. Se excluyen de la unión: cada nodo
+  queda con su propio programa de dos a cuatro etapas
+- Sin cruces de cede a la derecha: netconvert los construye cuando las
+  calles que llegan van a menos de 13.6 m/s, y San Claudio entra en ese
+  caso, así que la avenida cedía el paso a cada calle por la derecha.
+  En Puebla la preferencia es de la vía principal; con umbral 0 todos
+  los cruces sin semáforo se resuelven por tipo de vía
 - Los semáforos, cruces y tramos que OSM no tiene van en los archivos
   Manual*, que BuildNetwork.sh aplica en una segunda pasada
 - Se ejecuta desde scripts/BuildNetwork.sh, que exige SUMO_HOME
@@ -43,6 +57,8 @@ Metadatos:
 Historial:
 ============
 Autor       Fecha           Descripción
+zxxz6       05/10/2026      Sin vueltas en U ni cede a la derecha
+zxxz6       05/10/2026      14 Sur y Circunvalación sin unir
 zxxz6       05/10/2026      Camellón continuo en Valsequillo y Sonora
 zxxz6       05/10/2026      Banquetas en avenidas: cruces en todo semáforo
 zxxz6       26/09/2026      Semáforos del inventario vía Signals.csv
@@ -65,6 +81,7 @@ zxxz6       26/09/2026      Creación
 
     <processing>
         <geometry.remove value="true"/>
+        <no-turnarounds.except-deadend value="true"/>
     </processing>
 
     <edge_removal>
@@ -74,6 +91,8 @@ zxxz6       26/09/2026      Creación
     <tls_building>
         <tls.discard-simple value="true"/>
         <tls.join value="true"/>
+        <tls.join-exclude
+            value="300698213,300698635,527164239,527164240"/>
         <tls.guess-signals value="true"/>
         <tls.default-type value="static"/>
     </tls_building>
@@ -85,6 +104,7 @@ zxxz6       26/09/2026      Creación
     <junctions>
         <junctions.join value="true"/>
         <junctions.join-exclude value="411862913,8116703562"/>
+        <junctions.right-before-left.speed-threshold value="0"/>
     </junctions>
 
     <pedestrian>
