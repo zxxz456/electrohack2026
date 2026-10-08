@@ -29,7 +29,8 @@ Consideraciones:
 - El cruce de 8431668234 trae del programa anterior el índice de enlace
   4, que en el semáforo conjunto san_claudio_24_sur choca con un
   movimiento vehicular. Se descarta y se declara de nuevo para que
-  netconvert le asigne un índice propio
+  netconvert le asigne un índice propio. Lo mismo con los tres cruces
+  de Facultad de Derecho al unirse en san_claudio_derecho
 - Cada cruce se define por el nodo y el tramo que atraviesa
 
 
@@ -42,6 +43,7 @@ Metadatos:
 Historial:
 ============
 Autor       Fecha           Descripción
+zxxz6       05/10/2026      Cruces de Facultad de Derecho
 zxxz6       05/10/2026      Cruces de 24 Sur y San Claudio
 zxxz6       05/10/2026      Creación
 
@@ -75,6 +77,30 @@ zxxz6       05/10/2026      Creación
     <crossing
         node="8431668234"
         edges="812611392#9"
+        priority="true"/>
+    <crossing
+        node="5729141925"
+        edges="624282424#5"
+        discard="true"/>
+    <crossing
+        node="5729141925"
+        edges="624282424#5"
+        priority="true"/>
+    <crossing
+        node="5729141926"
+        edges="-624282386#5 624282386#5"
+        discard="true"/>
+    <crossing
+        node="5729141926"
+        edges="-624282386#5 624282386#5"
+        priority="true"/>
+    <crossing
+        node="5729141927"
+        edges="624282383#12"
+        discard="true"/>
+    <crossing
+        node="5729141927"
+        edges="624282383#12"
         priority="true"/>
 </connections>
 <!--

@@ -5,3 +5,6 @@ valsequillo_uap_oriente,,BOULEVARD VALSEQUILLO x UNIVERSIDAD AUTONOMA DE PUEBLA 
 cluster_411226925_411405439,san_claudio_24_sur,24 SUR x SAN CLAUDIO (cruce principal),observado en campo; el inventario solo semaforiza 8431668234; cruces peatonales sin semaforo peatonal
 8431668234,san_claudio_24_sur,24 SUR x SAN CLAUDIO (sentido norte),semaforo del inventario; se une al programa del cruce principal porque estan a 0.2 m
 10054805230,,AVENIDA SAN CLAUDIO cruce peatonal a media cuadra (calzada central),observado en campo; semaforo peatonal y vehicular en ambos sentidos
+5729141925,san_claudio_derecho,ENTRADA A FACULTAD DE DERECHO x SAN CLAUDIO (calzada lateral sur),semaforo de OSM; las tres calzadas comparten un solo cruce peatonal y se unen en un programa
+5729141926,san_claudio_derecho,ENTRADA A FACULTAD DE DERECHO x SAN CLAUDIO (calzada central),semaforo del inventario y de OSM; se une con las calzadas laterales
+5729141927,san_claudio_derecho,ENTRADA A FACULTAD DE DERECHO x SAN CLAUDIO (calzada lateral norte),semaforo de OSM; las tres calzadas comparten un solo cruce peatonal y se unen en un programa
