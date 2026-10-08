@@ -39,6 +39,9 @@
 # - Al final verifica que la red tenga todos los semáforos de
 #   Signals.csv y ManualSignals.csv; netconvert solo advierte si un nodo
 #   no existe
+# - Después recorta la zona de estudio de cada corredor de esta red que
+#   la declara (scripts/BuildStudyArea.py), para que corresponda siempre
+#   a la red recién construida
 #
 #
 # Metadatos:
@@ -50,6 +53,7 @@
 # Historial:
 # ------------
 # Autor       Fecha           Descripción
+# zxxz6       05/10/2026      Zonas de estudio de los corredores
 # zxxz6       05/10/2026      Semáforos conjuntos desde ManualSignals.csv
 # zxxz6       05/10/2026      Segunda pasada con correcciones de campo
 # zxxz6       26/09/2026      Semáforos del inventario y verificación final
@@ -126,6 +130,9 @@ polyconvert -c Corridor.polycfg
 if [[ -f Signals.csv ]]; then
     python "$REPO_DIR/scripts/MatchSignals.py" --corridor "$CORRIDOR" --check
 fi
+
+echo "Recortando las zonas de estudio de los corredores..."
+python "$REPO_DIR/scripts/BuildStudyArea.py" --network "$CORRIDOR"
 
 echo "Listo. Para verla: sumo-gui -c networks/$CORRIDOR/Corridor.sumocfg"
 
