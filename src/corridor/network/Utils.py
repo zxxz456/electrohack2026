@@ -6,9 +6,10 @@ Utils.py
 Descripción:
 ------------
 Constantes y utilidades del módulo network: ubicación de los archivos
-de cada corredor, el área descargada de OpenStreetMap y los radios con
+de cada corredor, el área descargada de OpenStreetMap, los radios con
 que se agrupan los postes del inventario de semáforos y se emparejan
-con los cruces de la red de SUMO.
+con los cruces de la red de SUMO, y los archivos y parámetros de la
+generación de demanda.
 
 
 Consideraciones:
@@ -32,6 +33,7 @@ Metadatos:
 Historial:
 ------------
 Autor       Fecha           Descripción
+zxxz6       05/10/2026      Corredores, zonas de estudio, escenarios y demanda
 zxxz6       05/10/2026      Nombre de ManualSignals.csv
 zxxz6       26/09/2026      Red base, cruces fuera del área, inside_area
 zxxz6       26/09/2026      Creación
@@ -41,7 +43,7 @@ zxxz6       26/09/2026      Creación
 
 import unicodedata
 
-from corridor.common.Utils import DATA_DIR, NETWORKS_DIR
+from corridor.common.Utils import CONFIGS_DIR, DATA_DIR, NETWORKS_DIR
 
 # --------------------------------------------------------------------------
 # Archivos
@@ -56,6 +58,56 @@ SIGNALS_FILE_NAME = "Signals.csv"
 MANUAL_SIGNALS_FILE_NAME = "ManualSignals.csv"
 
 DEFAULT_CORRIDOR = "puebla"
+
+# Semáforos controlados por los agentes y escenarios de demanda, un
+# archivo YAML por corredor o escenario.
+CORRIDORS_DIR = CONFIGS_DIR / "corridors"
+SCENARIOS_DIR = CONFIGS_DIR / "scenarios"
+
+# Zona de estudio de cada corredor: la red recortada alrededor de sus
+# semáforos, generated/areas/<corredor>.net.xml.gz.
+AREAS_DIR_NAME = "generated/areas"
+
+# Demanda generada: generated/demand/<escenario>/seed_<semilla>/.
+DEMAND_DIR_NAME = "generated/demand"
+BACKGROUND_ROUTES_FILE_NAME = "Background.rou.xml"
+CORRIDOR_ROUTES_FILE_NAME = "Corridor.rou.xml"
+PEDESTRIAN_ROUTES_FILE_NAME = "Pedestrians.rou.xml"
+COUNTS_FILE_NAME = "Counts.xml"
+
+# --------------------------------------------------------------------------
+# Demanda
+# --------------------------------------------------------------------------
+
+# Viajes candidatos por hora de escenario para routeSampler. Cuantos más
+# candidatos, más rutas distintas tiene para cumplir los conteos.
+CANDIDATE_TRIPS_PER_HOUR = 20000
+
+# Candidatos dirigidos al corredor: salen y llegan a tramos a menos de
+# CORRIDOR_CANDIDATE_RADIUS_M del corredor y pasan por uno de sus
+# accesos. Sin ellos, de 20 000 viajes al azar en toda la red solo unos
+# 10 usan la calzada central de San Claudio entre 22 Sur y Derecho, y
+# routeSampler no alcanza los conteos ahí.
+CORRIDOR_CANDIDATE_TRIPS = 5000
+CORRIDOR_CANDIDATE_RADIUS_M = 800.0
+
+# Longitud mínima de un tramo de origen o destino: en tramos más cortos
+# SUMO no siempre puede insertar el auto.
+MIN_ENDPOINT_EDGE_M = 20.0
+
+# Rodeo máximo de una ruta candidata: su longitud no puede pasar de
+# MAX_DETOUR_RATIO veces la línea recta entre origen y destino más
+# DETOUR_SLACK_M. Sin vueltas en U, un viaje dirigido cuyo destino queda
+# atrás del acceso rodea manzanas por calles locales: sin este filtro la
+# mediana de rodeo era 1.69 y el 36 % pasaba de 2, contra 1.23 de los
+# viajes de fondo, que siguen la ruta más corta.
+MAX_DETOUR_RATIO = 1.5
+DETOUR_SLACK_M = 200.0
+
+# Prefijos de los IDs, para que los tres archivos de rutas no choquen.
+BACKGROUND_PREFIX = "bg"
+CORRIDOR_PREFIX = "cor"
+PEDESTRIAN_PREFIX = "ped"
 
 # --------------------------------------------------------------------------
 # Área de cada corredor: (lon_min, lat_min, lon_max, lat_max), WGS84

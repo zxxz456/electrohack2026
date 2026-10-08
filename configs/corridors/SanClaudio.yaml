@@ -1,0 +1,59 @@
+# SanClaudio.yaml
+# ========================
+#
+#
+# Descripción:
+# ------------
+# Las seis intersecciones semaforizadas de la Avenida San Claudio, de
+# 14 Sur a 24 Sur, que controlan los agentes. El resto de los semáforos
+# de la red sigue con su programa de tiempo fijo.
+#
+#
+# Consideraciones:
+# ------------
+# - El orden es de poniente a oriente y define los vecinos: cada
+#   intersección es vecina de la anterior y de la siguiente
+# - Cada intersección se nombra por un nodo de la red; el entorno busca
+#   el semáforo que lo controla (corridor.network.CorridorSpec)
+# - Facultad de Derecho y 24 Sur son semáforos conjuntos de varios
+#   nodos, declarados en networks/puebla/ManualSignals.csv
+# - Es el primer corredor para depurar el entorno y el entrenamiento;
+#   la red completa será otro archivo con la misma forma
+# - study_area_m: los experimentos corren sobre la red recortada a esa
+#   distancia de los semáforos (corridor.network.StudyArea). Con 170 m
+#   quedan fuera los cruces con Circunvalación, a 195 m o más del eje,
+#   que en la red completa se saturan y bloquean el corredor; las calles
+#   laterales conservan unos 170 m para formar cola
+#
+#
+# Metadatos:
+# ----------
+# * Autor: zxxz6 (Bryan Violante Arriaga)
+# * Versión: 1.0.0
+#
+#
+# Historial:
+# ------------
+# Autor       Fecha           Descripción
+# zxxz6       05/10/2026      Creación, con zona de estudio de 170 m
+#
+
+network: puebla
+study_area_m: 170
+
+signals:
+  - name: 14 Sur
+    node: "cluster_5102252138_5895139985_6821360686_6821360696_#4more"
+  - name: 18 Sur
+    node: "cluster_1641131555_1641131559"
+  - name: Facultad de Derecho
+    node: "5729141926"
+  - name: 22 Sur
+    node: "cluster_1646160049_3026184027"
+  - name: Peatonal 22-24 Sur
+    node: "10054805230"
+  - name: 24 Sur
+    node: "cluster_411226925_411405439"
+
+############################ FIN DE SANCLAUDIO.YAML ############################
+################################################################################
