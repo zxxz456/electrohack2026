@@ -1,0 +1,47 @@
+# Stages.yaml
+# ========================
+#
+#
+# Descripción:
+# ------------
+# Etapas declaradas a mano para los semáforos cuyo programa de
+# netconvert no representa la operación real. Reemplazan a las etapas
+# que corridor.env.PhasePlan saca del programa de la red.
+#
+#
+# Consideraciones:
+# ------------
+# - Cada estado tiene un carácter por enlace del semáforo, en el orden
+#   de linkIndex de la red: G verde con prioridad, g verde que cede el
+#   paso, r rojo. El ámbar y el todo rojo los calcula PhasePlan
+# - Los índices dependen de netconvert; SUMO está fijo en 1.27.1 y
+#   PhasePlan rechaza un estado con un número distinto de enlaces
+# - duration_s es la duración en tiempo fijo; se recorta entre el verde
+#   mínimo y el máximo de la etapa
+# - Facultad de Derecho: netconvert le da verde a cada calzada por
+#   separado, en cuatro etapas. En la calle avanzan juntas las tres
+#   calzadas y después cruzan los peatones. Enlaces 0-1 lateral sur,
+#   2-5 central, 6 lateral norte, 7-9 cruces peatonales
+# - PENDIENTE: medir en campo las duraciones reales
+#
+#
+# Metadatos:
+# ----------
+# * Autor: zxxz6 (Bryan Violante Arriaga)
+# * Versión: 1.0.0
+#
+#
+# Historial:
+# ------------
+# Autor       Fecha           Descripción
+# zxxz6       05/10/2026      Creación, Facultad de Derecho
+#
+
+san_claudio_derecho:
+  - state: GGGGGGGrrr
+    duration_s: 60
+  - state: rrrrrrrGGG
+    duration_s: 20
+
+############################# FIN DE STAGES.YAML ###############################
+################################################################################
