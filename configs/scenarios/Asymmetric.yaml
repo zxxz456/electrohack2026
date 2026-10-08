@@ -1,0 +1,55 @@
+# Asymmetric.yaml
+# ========================
+#
+#
+# Descripción:
+# ------------
+# Escenario 2: flujo dominante en un sentido de San Claudio. Es donde la
+# coordinación entre semáforos debería rendir más: los pelotones que
+# salen de una intersección llegan juntos a la siguiente.
+#
+#
+# Consideraciones:
+# ------------
+# - Mismo total en la principal que PeakHour (200 por carril sumando los
+#   dos sentidos), repartido 3 a 1 hacia el oriente. Así la diferencia
+#   con PeakHour es el reparto y no la carga
+# - Las tasas son SUPUESTAS; ver PeakHour.yaml para el significado de
+#   cada campo
+#
+#
+# Metadatos:
+# ----------
+# * Autor: zxxz6 (Bryan Violante Arriaga)
+# * Versión: 1.0.0
+#
+#
+# Historial:
+# ------------
+# Autor       Fecha           Descripción
+# zxxz6       05/10/2026      Creación, tasas calibradas a la zona de estudio
+#
+
+corridor: SanClaudio
+duration_s: 3600
+
+background:
+  vehicles_per_hour: 200
+  fringe_factor: 10
+
+corridor_counts:
+  main_street: Avenida San Claudio
+  main_per_lane:
+    forward: 150
+    backward: 50
+  side_per_lane: 50
+  measured: {}
+
+pedestrians:
+  per_hour: 1500
+  max_walk_m: 1200
+  corridor_buffer_m: 150
+  corridor_weight: 10
+
+############################ FIN DE ASYMMETRIC.YAML ############################
+################################################################################

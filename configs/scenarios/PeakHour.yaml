@@ -1,0 +1,69 @@
+# PeakHour.yaml
+# ========================
+#
+#
+# Descripción:
+# ------------
+# Escenario 1: tráfico típico de hora pico en San Claudio, igual en los
+# dos sentidos. Es la referencia contra la que se mide el escenario
+# asimétrico.
+#
+#
+# Consideraciones:
+# ------------
+# - Las tasas son SUPUESTAS, no medidas. Sirven para comparar
+#   controladores entre sí, no para describir el tráfico real. Los
+#   aforos medidos van en measured, tramo -> autos por hora, y
+#   reemplazan lo supuesto en ese acceso
+# - main_per_lane y side_per_lane son autos por hora por carril que
+#   entran a cada acceso de un semáforo del corredor. forward es el
+#   sentido del archivo del corredor (hacia el oriente)
+# - Calibrado contra la capacidad del modelo, no contra aforos: es la
+#   carga más alta con la que el tiempo fijo opera sin bloquearse en la
+#   zona de estudio. Con 100 por carril hay colas pero casi ningún
+#   teletransporte; desde 150 se traban 18 Sur y 14 Sur, sobre todo por
+#   vueltas a la izquierda que esperan hueco en un carril compartido con
+#   los que siguen derecho
+# - background es tráfico al azar en la zona de estudio; fringe_factor
+#   hace que la mayoría de los viajes entren y salgan por sus bordes
+# - Los peatones se reparten en la zona de estudio, pero los tramos a
+#   menos de corridor_buffer_m de San Claudio pesan corridor_weight veces
+#   más: CU BUAP concentra la caminata alrededor del corredor
+# - La demanda se genera con scripts/GenerateDemand.py
+#
+#
+# Metadatos:
+# ----------
+# * Autor: zxxz6 (Bryan Violante Arriaga)
+# * Versión: 1.0.0
+#
+#
+# Historial:
+# ------------
+# Autor       Fecha           Descripción
+# zxxz6       05/10/2026      Creación, tasas calibradas a la zona de estudio
+#
+
+corridor: SanClaudio
+duration_s: 3600
+
+background:
+  vehicles_per_hour: 200
+  fringe_factor: 10
+
+corridor_counts:
+  main_street: Avenida San Claudio
+  main_per_lane:
+    forward: 100
+    backward: 100
+  side_per_lane: 50
+  measured: {}
+
+pedestrians:
+  per_hour: 1500
+  max_walk_m: 1200
+  corridor_buffer_m: 150
+  corridor_weight: 10
+
+############################ FIN DE PEAKHOUR.YAML ##############################
+################################################################################
